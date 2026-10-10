@@ -5,8 +5,6 @@ import type { TRowAction } from "@/types";
 
 definePage({ meta: { title: "Stock" } });
 
-const toast = useToast();
-
 const localConsumables = ref(consumables.map((consumable) => ({ ...consumable })));
 
 const stockColumns: { key: string; label: string; align?: "left" | "right" }[] = [
@@ -19,19 +17,7 @@ const restockSheetOpen = ref(false);
 const stockTakeSheetOpen = ref(false);
 const selectedId = ref<string>();
 
-const restockPad = ref("");
-const stockTakePad = ref("");
-const stockTakeReason = ref("");
-
-const selected = computed(() => localConsumables.value.find((consumable) => consumable.id === selectedId.value) ?? null);
-
-function padToQty(pad: string) {
-  return Number(pad || "0");
-}
-
-const restockAmount = computed(() => padToQty(restockPad.value));
-const stockTakeAmount = computed(() => padToQty(stockTakePad.value));
-const suggestedTopUp = computed(() => (selected.value ? Math.max(0, selected.value.reorderLevel - selected.value.onHand) : 0));
+const selected = computed(() => localConsumables.value.find((consumable) => consumable.id === selectedId.value));
 
 function reorderTone(consumable: (typeof localConsumables.value)[number]) {
   if (consumable.onHand <= consumable.reorderLevel) {
@@ -61,35 +47,28 @@ function reorderText(consumable: (typeof localConsumables.value)[number]) {
 
 function openRestock(id: string) {
   selectedId.value = id;
-  restockPad.value = "";
   restockSheetOpen.value = true;
 }
 
 function openStockTake(id: string) {
   selectedId.value = id;
-  stockTakePad.value = "";
-  stockTakeReason.value = "";
   stockTakeSheetOpen.value = true;
 }
 
-function confirmRestock() {
-  if (!selected.value || restockAmount.value <= 0) {
+function confirmRestock(quantity: number) {
+  if (!selected.value) {
     return;
   }
 
-  selected.value.onHand += restockAmount.value;
-  restockSheetOpen.value = false;
-  toast.show("Saved");
+  selected.value.onHand += quantity;
 }
 
-function confirmStockTake() {
-  if (!selected.value || !stockTakeReason.value.trim()) {
+function confirmStockTake(quantity: number) {
+  if (!selected.value) {
     return;
   }
 
-  selected.value.onHand = stockTakeAmount.value;
-  stockTakeSheetOpen.value = false;
-  toast.show("Saved");
+  selected.value.onHand = quantity;
 }
 
 function stockActions(consumable: (typeof localConsumables.value)[number]): TRowAction[] {
@@ -109,37 +88,7 @@ function stockActions(consumable: (typeof localConsumables.value)[number]): TRow
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="restockSheetOpen" title="Restock">
-      <div class="flex flex-col gap-4">
-        <p v-if="selected" class="text-base font-medium text-zinc-900">{{ selected.name }}</p>
-        <p class="text-center text-2xl font-semibold tabular-nums">{{ restockAmount }} {{ selected?.unit }}</p>
-        <UiButton v-if="suggestedTopUp > 0" variant="ghost" @click="restockPad = String(suggestedTopUp)"
-          >Use {{ suggestedTopUp }} (top up to reorder level)</UiButton
-        >
-        <UiNumberPad v-model="restockPad" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="restockAmount <= 0" @click="confirmRestock">Save restock</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
-
-    <UiBottomSheet v-model:open="stockTakeSheetOpen" title="Stock-take">
-      <div class="flex flex-col gap-4">
-        <p v-if="selected" class="text-base font-medium text-zinc-900">{{ selected.name }}</p>
-        <p class="text-center text-2xl font-semibold tabular-nums">{{ stockTakeAmount }} {{ selected?.unit }}</p>
-        <UiButton v-if="selected" variant="ghost" @click="stockTakePad = String(selected.onHand)">Use current ({{ selected.onHand }})</UiButton>
-        <UiNumberPad v-model="stockTakePad" />
-        <UiField v-model="stockTakeReason" label="Reason" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!stockTakeReason.trim()" @click="confirmStockTake">Save stock-take</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <StockRestockSheet v-model:open="restockSheetOpen" :consumable="selected" @submit="confirmRestock" />
+    <StockTakeSheet v-model:open="stockTakeSheetOpen" :consumable="selected" @submit="confirmStockTake" />
   </div>
 </template>

@@ -2,11 +2,10 @@
 import { IconIdentificationBadge } from "@/components";
 import { payRuns as payRunsMock } from "@/mocks/payroll";
 import { ROUTES, OWNER_TABS } from "@/types";
-import type { TOption, TPayFrequency, TPayRun } from "@/types";
+import type { TPayRun } from "@/types";
 
 definePage({ meta: { title: "Payroll" } });
 
-const toast = useToast();
 const router = useRouter();
 
 const payRuns = ref<TPayRun[]>([...payRunsMock]);
@@ -23,35 +22,10 @@ const statusTone = {
   finalized: "ok",
 } as const;
 
-const frequencyOptions: TOption<TPayFrequency>[] = [
-  { value: "daily", label: "Daily" },
-  { value: "weekly", label: "Weekly" },
-  { value: "semi-monthly", label: "Semi-monthly" },
-  { value: "monthly", label: "Monthly" },
-];
-
 const addOpen = ref(false);
-const newFrequency = ref<TPayFrequency>("semi-monthly");
-const newPeriodStart = ref(todayIso());
-const newPeriodEnd = ref(todayIso());
 
-const canCreateRun = computed(() => newPeriodStart.value.length > 0 && newPeriodEnd.value.length > 0 && newPeriodStart.value <= newPeriodEnd.value);
-
-function submitNewRun() {
-  if (!canCreateRun.value) {
-    return;
-  }
-
-  payRuns.value.push({
-    id: `run-${payRuns.value.length + 1}`,
-    frequency: newFrequency.value,
-    periodStart: newPeriodStart.value,
-    periodEnd: newPeriodEnd.value,
-    status: "draft",
-  });
-
-  addOpen.value = false;
-  toast.show("Saved");
+function addRun(run: Omit<TPayRun, "id">) {
+  payRuns.value.push({ id: `run-${payRuns.value.length + 1}`, ...run });
 }
 
 function openRun(run: TPayRun) {
@@ -83,18 +57,6 @@ function openRun(run: TPayRun) {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="addOpen" title="New payroll run">
-      <div class="flex flex-col gap-4">
-        <UiSelect v-model="newFrequency" label="Frequency" :options="frequencyOptions" />
-        <UiField v-model="newPeriodStart" label="Period start" type="date" />
-        <UiField v-model="newPeriodEnd" label="Period end" type="date" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canCreateRun" @click="submitNewRun">Create run</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <PayrollNewRunSheet v-model:open="addOpen" @submit="addRun" />
   </div>
 </template>

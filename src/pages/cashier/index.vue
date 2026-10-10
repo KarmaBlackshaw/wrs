@@ -3,13 +3,11 @@ import { drawerSessions } from "@/mocks/drawerSessions";
 import { walkInSales } from "@/mocks/walkInSales";
 import { payments } from "@/mocks/payments";
 import { trips } from "@/mocks/trips";
-import { expenses, expenseCategories } from "@/mocks/expenses";
+import { expenses } from "@/mocks/expenses";
 import { ROUTES } from "@/types";
 import type { TLocalExpense, TReportColumn } from "@/types";
 
 definePage({ meta: { title: "Drawer" } });
-
-const toast = useToast();
 
 const latestSession = drawerSessions.at(-1) ?? null;
 const sessionDay = latestSession ? new Date(latestSession.openedAt) : new Date();
@@ -26,16 +24,8 @@ const expenseColumns: TReportColumn[] = [
 ];
 
 const openSheetOpen = ref(false);
-const openPad = ref("");
-
 const expenseSheetOpen = ref(false);
-const expenseCategory = ref(expenseCategories[0] ?? "");
-const expenseCategoryOptions = expenseCategories.map((category) => ({ value: category, label: category }));
-const expensePad = ref("");
-const expenseNote = ref("");
-
 const closeSheetOpen = ref(false);
-const countPad = ref("");
 
 const suggestedOpeningCash = latestSession?.openingCash ?? 0;
 
@@ -61,47 +51,13 @@ const drawerExpensesTotal = computed(() => seededExpenses.value + localExpenseTo
 
 const expectedCash = computed(() => openingCash.value + walkInCash.value + collections.value + riderRemittances.value - drawerExpensesTotal.value);
 
-const openAmount = computed(() => padToCentavos(openPad.value));
-const expenseAmount = computed(() => padToCentavos(expensePad.value));
-const countedCash = computed(() => padToCentavos(countPad.value));
-
-const variance = computed(() => countedCash.value - expectedCash.value);
-
-const varianceTone = computed(() => (variance.value === 0 ? "ok" : "danger"));
-
-const varianceText = computed(() => {
-  if (variance.value === 0) {
-    return "Exact match";
-  }
-
-  return variance.value > 0 ? `Over ${formatMoney(variance.value)}` : `Short ${formatMoney(Math.abs(variance.value))}`;
-});
-
-function confirmOpen() {
-  openingCash.value = openAmount.value;
+function confirmOpen(cash: number) {
+  openingCash.value = cash;
   isOpen.value = true;
-  openPad.value = "";
-  openSheetOpen.value = false;
-  toast.show("Saved");
 }
 
-function confirmExpense() {
-  if (expenseAmount.value <= 0 || !expenseCategory.value) {
-    return;
-  }
-
-  localExpenses.value.push({ id: `local-exp-${Date.now()}`, category: expenseCategory.value, amount: expenseAmount.value, note: expenseNote.value.trim() });
-  expensePad.value = "";
-  expenseNote.value = "";
-  expenseSheetOpen.value = false;
-  toast.show("Saved");
-}
-
-function confirmClose() {
-  isOpen.value = false;
-  closeSheetOpen.value = false;
-  countPad.value = "";
-  toast.show("Saved");
+function confirmExpense(expense: Omit<TLocalExpense, "id">) {
+  localExpenses.value.push({ id: `local-exp-${Date.now()}`, ...expense });
 }
 </script>
 
@@ -145,53 +101,8 @@ function confirmClose() {
       </template>
     </UiEmptyState>
 
-    <UiBottomSheet v-model:open="openSheetOpen" title="Open drawer">
-      <div class="flex flex-col gap-4">
-        <p class="text-center"><UiMoneyText :centavos="openAmount" size="xl" /></p>
-        <UiButton v-if="suggestedOpeningCash > 0" variant="ghost" @click="openPad = String(suggestedOpeningCash)">
-          Use {{ formatMoney(suggestedOpeningCash) }}
-        </UiButton>
-        <UiNumberPad v-model="openPad" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="confirmOpen">Confirm opening cash</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
-
-    <UiBottomSheet v-model:open="expenseSheetOpen" title="Drawer expense">
-      <div class="flex flex-col gap-4">
-        <UiSelect v-model="expenseCategory" label="Category" :options="expenseCategoryOptions" />
-        <p class="text-center"><UiMoneyText :centavos="expenseAmount" size="xl" /></p>
-        <UiNumberPad v-model="expensePad" />
-        <UiField v-model="expenseNote" label="Note" hint="Optional" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="expenseAmount <= 0" @click="confirmExpense">Save expense</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
-
-    <UiBottomSheet v-model:open="closeSheetOpen" title="Close with count">
-      <div class="flex flex-col gap-4">
-        <UiStatCard label="Expected cash"><UiMoneyText :centavos="expectedCash" size="lg" /></UiStatCard>
-        <p class="text-center"><UiMoneyText :centavos="countedCash" size="xl" /></p>
-        <UiButton variant="ghost" @click="countPad = String(expectedCash)">Use {{ formatMoney(expectedCash) }}</UiButton>
-        <UiNumberPad v-model="countPad" />
-        <p class="text-center text-lg font-semibold" :class="varianceTone === 'ok' ? 'text-emerald-700' : 'text-red-700'">
-          {{ varianceText }}
-        </p>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="confirmClose">Close drawer</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <DrawerOpenSheet v-model:open="openSheetOpen" :suggested-opening-cash="suggestedOpeningCash" @submit="confirmOpen" />
+    <DrawerExpenseSheet v-model:open="expenseSheetOpen" @submit="confirmExpense" />
+    <DrawerCloseSheet v-model:open="closeSheetOpen" :expected-cash="expectedCash" @submit="isOpen = false" />
   </div>
 </template>

@@ -98,31 +98,9 @@ function displayValue(setting: TSetting) {
 }
 
 const editSetting = ref<TSetting>();
-const editValue = ref("");
-const editEffectiveFrom = ref(todayIso());
 
-function openEdit(setting: TSetting) {
-  editSetting.value = setting;
-  const numericValue = typeof setting.value === "number" ? setting.value : Number(setting.value);
-
-  editValue.value = setting.value === null ? "" : moneyKeys.has(setting.key) ? String(numericValue / 100) : String(setting.value);
-  editEffectiveFrom.value = todayIso();
-}
-
-const canSubmitEdit = computed(() => editValue.value.trim().length > 0 && editEffectiveFrom.value.length > 0);
-
-function submitEdit() {
-  if (!editSetting.value || !canSubmitEdit.value) {
-    return;
-  }
-
-  const key = editSetting.value.key;
-  const raw = editValue.value.trim();
-  const numeric = Number(raw);
-  const value = moneyKeys.has(key) ? Math.round(numeric * 100) : Number.isNaN(numeric) ? raw : numeric;
-
-  settingsHistory.value.push({ key, value, effectiveFrom: editEffectiveFrom.value });
-  editSetting.value = undefined;
+function addSetting(setting: TSetting) {
+  settingsHistory.value.push(setting);
 }
 
 function saveChanges() {
@@ -130,7 +108,7 @@ function saveChanges() {
 }
 
 function settingActions({ setting }: { setting: TSetting }): TRowAction[] {
-  return [{ label: "Edit", onSelect: () => openEdit(setting) }];
+  return [{ label: "Edit", onSelect: () => (editSetting.value = setting) }];
 }
 </script>
 
@@ -155,23 +133,6 @@ function settingActions({ setting }: { setting: TSetting }): TRowAction[] {
       <RouterLink :to="ROUTES.OWNER.INVENTORY.MAINTENANCE" class="underline">Maintenance</RouterLink>.
     </p>
 
-    <UiBottomSheet :open="editSetting != null" title="Edit setting" @update:open="editSetting = undefined">
-      <div class="flex flex-col gap-4">
-        <p class="text-sm text-zinc-500">{{ editSetting ? settingLabel[editSetting.key] : "" }}</p>
-        <UiField
-          v-model="editValue"
-          :label="editSetting && moneyKeys.has(editSetting.key) ? 'Value (₱)' : 'Value'"
-          :type="editSetting && moneyKeys.has(editSetting.key) ? 'number' : 'text'"
-          :inputmode="editSetting && moneyKeys.has(editSetting.key) ? 'decimal' : undefined"
-        />
-        <UiField v-model="editEffectiveFrom" label="Effective date" type="date" hint="Applies forward from this date; history is kept." />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canSubmitEdit" @click="submitEdit">Save setting</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <SettingEditSheet v-model:setting="editSetting" :setting-label="settingLabel" :money-keys="moneyKeys" @submit="addSetting" />
   </div>
 </template>

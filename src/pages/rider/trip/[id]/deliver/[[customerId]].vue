@@ -68,21 +68,7 @@ const borrowedQty = computed(() => Math.max(0, delivered.value - empties.value))
 const needsDeposit = computed(() => borrowedQty.value > 0 && !customer.value?.depositWaived && (customer.value?.depositOnFile ?? 0) <= 0);
 const depositCollected = ref(0);
 const depositSheetOpen = ref(false);
-const depositInput = ref("");
-
-function openDepositSheet() {
-  depositInput.value = "";
-  depositSheetOpen.value = true;
-}
-
-function applyDepositSuggestion() {
-  depositInput.value = String(roundContainer?.depositAmount ?? 0);
-}
-
-function confirmDeposit() {
-  depositCollected.value = padToCentavos(depositInput.value);
-  depositSheetOpen.value = false;
-}
+const depositSuggestion = roundContainer?.depositAmount ?? 0;
 
 const blockReason = computed(() => {
   if (delivered.value === 0) {
@@ -103,22 +89,6 @@ const blockReason = computed(() => {
 const canConfirm = computed(() => blockReason.value === null);
 
 const collectPaymentOpen = ref(false);
-const paymentAmountInput = ref("");
-
-function openCollectPayment() {
-  paymentAmountInput.value = "";
-  collectPaymentOpen.value = true;
-}
-
-function applyBalanceSuggestion() {
-  paymentAmountInput.value = String(customer.value?.creditBalance ?? 0);
-}
-
-function confirmCollectPayment() {
-  collectPaymentOpen.value = false;
-  paymentAmountInput.value = "";
-  toast.show("Saved");
-}
 
 const confirmOpen = ref(false);
 
@@ -161,7 +131,7 @@ function pickCustomer(candidate: TCustomer) {
             Credit balance
             <UiMoneyText :centavos="customer.creditBalance" size="sm" tone="warn" />
           </p>
-          <UiButton variant="secondary" @click="openCollectPayment">Collect payment</UiButton>
+          <UiButton variant="secondary" @click="collectPaymentOpen = true">Collect payment</UiButton>
         </div>
       </UiCard>
 
@@ -189,7 +159,7 @@ function pickCustomer(candidate: TCustomer) {
             Deposit collected
             <UiMoneyText :centavos="depositCollected" size="sm" tone="ok" />
           </p>
-          <UiButton v-if="depositCollected === 0" variant="secondary" @click="openDepositSheet">Collect deposit</UiButton>
+          <UiButton v-if="depositCollected === 0" variant="secondary" @click="depositSheetOpen = true">Collect deposit</UiButton>
         </div>
       </UiCard>
 
@@ -198,34 +168,9 @@ function pickCustomer(candidate: TCustomer) {
         <UiButton :disabled="!canConfirm" @click="openConfirmDialog">Confirm delivery</UiButton>
       </div>
 
-      <UiBottomSheet v-model:open="depositSheetOpen" title="Collect deposit">
-        <div class="flex flex-col gap-4">
-          <p class="text-base text-zinc-700">Collect a deposit for the borrowed container before confirming.</p>
-          <UiMoneyText :centavos="padToCentavos(depositInput)" size="xl" />
-          <UiButton variant="ghost" @click="applyDepositSuggestion">Use {{ formatMoney(roundContainer?.depositAmount ?? 0) }}</UiButton>
-          <UiNumberPad v-model="depositInput" />
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UiButton @click="confirmDeposit">Collect deposit</UiButton>
-          </div>
-        </template>
-      </UiBottomSheet>
+      <DeliveryDepositSheet v-model:open="depositSheetOpen" :deposit-amount="depositSuggestion" @submit="depositCollected = $event" />
 
-      <UiBottomSheet v-model:open="collectPaymentOpen" title="Collect payment">
-        <div class="flex flex-col gap-4">
-          <p class="text-base text-zinc-700">Credit balance for {{ customer.name }}</p>
-          <UiMoneyText :centavos="customer.creditBalance" size="sm" tone="warn" />
-          <UiMoneyText :centavos="padToCentavos(paymentAmountInput)" size="xl" />
-          <UiButton variant="ghost" @click="applyBalanceSuggestion">Use {{ formatMoney(customer.creditBalance) }}</UiButton>
-          <UiNumberPad v-model="paymentAmountInput" />
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <UiButton @click="confirmCollectPayment">Record payment</UiButton>
-          </div>
-        </template>
-      </UiBottomSheet>
+      <DeliveryPaymentSheet v-model:open="collectPaymentOpen" :customer="customer" />
 
       <UiDialog v-model:open="confirmOpen" title="Confirm delivery">
         <div class="flex flex-col items-center gap-2 py-2">

@@ -4,7 +4,6 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customers" } });
 
-const toast = useToast();
 const { employeeName } = useEmployeeLookup();
 
 function riderLabel(riderId?: string) {
@@ -32,22 +31,6 @@ function openCustomer(customer: { id: string }) {
 }
 
 const addSheetOpen = ref(false);
-const nameDraft = ref("");
-const phoneDraft = ref("");
-const addressDraft = ref("");
-const canSaveCustomer = computed(() => nameDraft.value.trim().length > 0 && phoneDraft.value.trim().length > 0);
-
-function submitAdd() {
-  if (!canSaveCustomer.value) {
-    return;
-  }
-
-  toast.show("Customer saved");
-  nameDraft.value = "";
-  phoneDraft.value = "";
-  addressDraft.value = "";
-  addSheetOpen.value = false;
-}
 </script>
 
 <template>
@@ -80,18 +63,6 @@ function submitAdd() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="addSheetOpen" title="Add customer">
-      <div class="flex flex-col gap-4">
-        <UiField v-model="nameDraft" label="Name" />
-        <UiField v-model="phoneDraft" label="Phone" type="tel" />
-        <UiField v-model="addressDraft" label="Address" hint="Free text, landmarks welcome" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canSaveCustomer" @click="submitAdd">Save customer</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <CustomerAddSheet v-model:open="addSheetOpen" />
   </div>
 </template>

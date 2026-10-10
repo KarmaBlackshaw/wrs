@@ -41,10 +41,7 @@ function balance(loan: TLoan) {
 }
 
 const scheduleLoan = ref<TLoan>();
-
-function openSchedule(loan: TLoan) {
-  scheduleLoan.value = loan;
-}
+const scheduleInstallments = computed(() => (scheduleLoan.value ? schedule(scheduleLoan.value.id) : []));
 
 function approve(loan: TLoan) {
   loan.status = "approved";
@@ -52,18 +49,12 @@ function approve(loan: TLoan) {
 }
 
 const releaseLoan = ref<TLoan>();
-const releaseFile = ref<File>();
-
-function openRelease(loan: TLoan) {
-  releaseLoan.value = loan;
-  releaseFile.value = undefined;
-}
 
 function loanActions(loan: TLoan) {
   const actions: TRowAction[] = [];
 
   if (schedule(loan.id).length > 0) {
-    actions.push({ label: "Schedule", variant: "ghost", onSelect: () => openSchedule(loan) });
+    actions.push({ label: "Schedule", variant: "ghost", onSelect: () => (scheduleLoan.value = loan) });
   }
 
   if (loan.status === "requested") {
@@ -71,21 +62,19 @@ function loanActions(loan: TLoan) {
   }
 
   if (loan.status === "approved") {
-    actions.push({ label: "Release", variant: "primary", onSelect: () => openRelease(loan) });
+    actions.push({ label: "Release", variant: "primary", onSelect: () => (releaseLoan.value = loan) });
   }
 
   return actions;
 }
 
-function submitRelease() {
-  if (!releaseLoan.value || !releaseFile.value) {
+function releaseWithAuthorization(file: File) {
+  if (!releaseLoan.value) {
     return;
   }
 
   releaseLoan.value.status = "released";
-  releaseLoan.value.authorizationUrl = URL.createObjectURL(releaseFile.value);
-  releaseLoan.value = undefined;
-  toast.show("Released, posted as expense");
+  releaseLoan.value.authorizationUrl = URL.createObjectURL(file);
 }
 </script>
 
@@ -117,35 +106,8 @@ function submitRelease() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet :open="scheduleLoan != null" title="Installment schedule" @update:open="scheduleLoan = undefined">
-      <div v-if="scheduleLoan" class="flex flex-col gap-4">
-        <p class="text-sm text-zinc-500">
-          {{ employeeName(scheduleLoan.employeeId) }}
-          <template v-if="scheduleLoan.ratePct">· {{ scheduleLoan.ratePct }}% {{ scheduleLoan.method }} · {{ scheduleLoan.termMonths }} months</template>
-        </p>
-        <ul class="flex flex-col gap-1 text-sm text-zinc-600">
-          <li v-for="installment in schedule(scheduleLoan.id)" :key="installment.seq" class="flex items-center justify-between">
-            <span>#{{ installment.seq }}, due {{ formatDate(installment.due) }}</span>
-            <span class="flex items-center gap-2">
-              <UiMoneyText :centavos="installment.principalPart + installment.interestPart" size="sm" />
-              <UiStatusPill :tone="installment.paid ? 'ok' : 'warn'">{{ installment.paid ? "Paid" : "Pending" }}</UiStatusPill>
-            </span>
-          </li>
-        </ul>
-      </div>
-    </UiBottomSheet>
+    <LoanScheduleSheet v-model:loan="scheduleLoan" :installments="scheduleInstallments" />
 
-    <UiBottomSheet :open="releaseLoan != null" title="Release with authorization" @update:open="releaseLoan = undefined">
-      <div class="flex flex-col gap-4">
-        <p class="text-sm text-zinc-500">{{ releaseLoan ? employeeName(releaseLoan.employeeId) : "" }}</p>
-        <UiFileInput v-model="releaseFile" label="Signed authorization photo" accept="image/*" capture="environment" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!releaseFile" @click="submitRelease">Release loan</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <LoanReleaseSheet v-model:loan="releaseLoan" @submit="releaseWithAuthorization" />
   </div>
 </template>

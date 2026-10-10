@@ -4,7 +4,7 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customer" } });
 
-const { employeeName, riderOptions } = useEmployeeLookup();
+const { employeeName } = useEmployeeLookup();
 const { findCustomer } = useCustomerLookup();
 
 const route = useRoute("/owner/customers/[id]");
@@ -46,28 +46,7 @@ const history = computed(() =>
 );
 
 const creditSheetOpen = ref(false);
-const creditEnabledDraft = ref("enabled");
-
-const creditOptions = [
-  { value: "enabled", label: "Enabled" },
-  { value: "disabled", label: "Disabled" },
-];
-const limitDraft = ref(0);
-
-function openCreditSheet() {
-  if (!customer.value) {
-    return;
-  }
-
-  creditEnabledDraft.value = customer.value.creditEnabled ? "enabled" : "disabled";
-  limitDraft.value = (customer.value.creditLimit ?? 0) / 100;
-  creditSheetOpen.value = true;
-}
-
-function submitCredit() {
-  toast.show("Credit settings saved");
-  creditSheetOpen.value = false;
-}
+const editSheetOpen = ref(false);
 
 async function toggleWaive() {
   const isConfirmed = await confirmDialog.confirm({
@@ -79,38 +58,13 @@ async function toggleWaive() {
     toast.show("Deposit waiver saved");
   }
 }
-
-const editSheetOpen = ref(false);
-const nameDraft = ref("");
-const phoneDraft = ref("");
-const addressDraft = ref("");
-const riderDraft = ref("");
-const riderDraftOptions = [{ value: "", label: "Open" }, ...riderOptions];
-const canSaveCustomer = computed(() => nameDraft.value.trim().length > 0 && phoneDraft.value.trim().length > 0);
-
-function openEditSheet() {
-  if (!customer.value) {
-    return;
-  }
-
-  nameDraft.value = customer.value.name;
-  phoneDraft.value = customer.value.phone;
-  addressDraft.value = customer.value.address;
-  riderDraft.value = customer.value.riderId ?? "";
-  editSheetOpen.value = true;
-}
-
-function submitEdit() {
-  toast.show("Customer saved");
-  editSheetOpen.value = false;
-}
 </script>
 
 <template>
   <div v-if="customer" class="flex flex-col gap-4">
     <UiPageHeader :title="customer.name" :subtitle="headerSubtitle" :back="ROUTES.OWNER.CUSTOMERS.INDEX">
       <template #actions>
-        <UiButton variant="secondary" @click="openEditSheet">Edit</UiButton>
+        <UiButton variant="secondary" @click="editSheetOpen = true">Edit</UiButton>
       </template>
     </UiPageHeader>
 
@@ -131,7 +85,9 @@ function submitEdit() {
 
     <UiCard title="Credit and deposit">
       <template #actions>
-        <UiButton variant="secondary" size="md" @click="openCreditSheet">{{ customer.creditEnabled ? "Change credit limit" : "Enable credit" }}</UiButton>
+        <UiButton variant="secondary" size="md" @click="creditSheetOpen = true">{{
+          customer.creditEnabled ? "Change credit limit" : "Enable credit"
+        }}</UiButton>
         <UiButton variant="secondary" size="md" @click="toggleWaive">{{ customer.depositWaived ? "Un-waive deposit" : "Waive deposit" }}</UiButton>
       </template>
       <div class="flex flex-col gap-1 text-base text-zinc-700">
@@ -151,33 +107,8 @@ function submitEdit() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="creditSheetOpen" title="Credit settings">
-      <div class="flex flex-col gap-4">
-        <UiSegmentedControl v-model="creditEnabledDraft" :options="creditOptions" />
-        <UiStepper v-if="creditEnabledDraft === 'enabled'" v-model="limitDraft" label="Credit limit (pesos)" :min="0" :step="500" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="submitCredit">Save</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
-
-    <UiBottomSheet v-model:open="editSheetOpen" title="Edit customer">
-      <div class="flex flex-col gap-4">
-        <UiField v-model="nameDraft" label="Name" />
-        <UiField v-model="phoneDraft" label="Phone" type="tel" />
-        <UiField v-model="addressDraft" label="Address" />
-        <UiSelect v-model="riderDraft" label="Rider" :options="riderDraftOptions" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canSaveCustomer" @click="submitEdit">Save</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <CustomerCreditSheet v-model:open="creditSheetOpen" :customer="customer" />
+    <CustomerEditSheet v-model:open="editSheetOpen" :customer="customer" />
   </div>
   <UiEmptyState v-else title="Customer not found">
     <template #action>

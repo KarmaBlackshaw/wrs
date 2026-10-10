@@ -15,9 +15,7 @@ const confirmDialog = useConfirm();
 
 const handled = ref<Record<string, "approved" | "rejected">>({});
 
-const loanSheetOpen = ref(false);
 const loanApproval = ref<TApproval>();
-const authFile = ref<File>();
 
 const columns = [
   { key: "summary", label: "Request" },
@@ -64,8 +62,6 @@ function loanPreview(loan: TLoan) {
 async function openConfirm(approval: TApproval, action: "approve" | "reject") {
   if (action === "approve" && approval.kind === "loan") {
     loanApproval.value = approval;
-    authFile.value = undefined;
-    loanSheetOpen.value = true;
 
     return;
   }
@@ -84,14 +80,8 @@ async function openConfirm(approval: TApproval, action: "approve" | "reject") {
   toast.show(action === "approve" ? "Approved" : "Rejected");
 }
 
-function confirmLoanApproval() {
-  if (!loanApproval.value || !authFile.value) {
-    return;
-  }
-
-  handled.value[loanApproval.value.id] = "approved";
-  toast.show("Loan approved");
-  loanSheetOpen.value = false;
+function approveLoan(approval: TApproval) {
+  handled.value[approval.id] = "approved";
 }
 </script>
 
@@ -117,18 +107,6 @@ function confirmLoanApproval() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="loanSheetOpen" title="Approve loan">
-      <div class="flex flex-col gap-4">
-        <p v-if="loanApproval">{{ loanApproval.summary }}</p>
-        <p class="text-sm text-zinc-500">A signed authorization photo is required before releasing a loan (BR-15).</p>
-        <UiFileInput v-model="authFile" label="Authorization photo" accept="image/*" capture="environment" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!authFile" @click="confirmLoanApproval">Approve and release</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <LoanApproveSheet v-model:approval="loanApproval" @submit="approveLoan" />
   </div>
 </template>

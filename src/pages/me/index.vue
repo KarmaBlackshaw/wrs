@@ -6,7 +6,6 @@ import { ROUTES } from "@/types";
 definePage({ meta: { title: "Me" } });
 
 const authStore = useAuthStore();
-const toast = useToast();
 const router = useRouter();
 
 function payRunFor(runId: string) {
@@ -41,39 +40,13 @@ const loanRows = computed(() =>
 );
 
 const sheetOpen = ref(false);
-const requestType = ref("advance");
-
-const requestTypeOptions = [
-  { value: "advance", label: "Advance" },
-  { value: "loan", label: "Loan" },
-];
-const amountInput = ref("");
-const termMonths = ref(3);
-
-const canSubmit = computed(() => padToCentavos(amountInput.value) > 0);
-
-function openSheet() {
-  requestType.value = "advance";
-  amountInput.value = "";
-  termMonths.value = 3;
-  sheetOpen.value = true;
-}
-
-function submitRequest() {
-  if (!canSubmit.value) {
-    return;
-  }
-
-  sheetOpen.value = false;
-  toast.show("Saved");
-}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <UiPageHeader title="Me" :subtitle="authStore.user?.name">
       <template #actions>
-        <UiButton @click="openSheet">Request advance or loan</UiButton>
+        <UiButton @click="sheetOpen = true">Request advance or loan</UiButton>
       </template>
     </UiPageHeader>
 
@@ -105,21 +78,6 @@ function submitRequest() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="sheetOpen" title="Request advance or loan">
-      <div class="flex flex-col gap-4">
-        <UiSegmentedControl v-model="requestType" :options="requestTypeOptions" />
-        <div>
-          <p class="mb-1.5 text-sm font-medium text-zinc-700">Amount</p>
-          <UiMoneyText :centavos="padToCentavos(amountInput)" size="lg" />
-          <UiNumberPad v-model="amountInput" />
-        </div>
-        <UiStepper v-if="requestType === 'loan'" v-model="termMonths" label="Term (months)" :min="1" :max="24" />
-      </div>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canSubmit" @click="submitRequest">Submit request</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <LoanRequestSheet v-model:open="sheetOpen" />
   </div>
 </template>

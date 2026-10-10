@@ -8,8 +8,6 @@ import { OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Maintenance" } });
 
-const toast = useToast();
-
 const maintenanceLogs = ref<TMaintenanceLog[]>([...maintenanceLogsMock]);
 const latestMeterLiters = computed(() => Math.max(...meterReadings.map((reading) => reading.liters)));
 
@@ -39,31 +37,18 @@ const statusLabel = {
 } as const;
 
 const logSheetItem = ref<TConsumable>();
-const meterReading = ref(latestMeterLiters.value);
 
-function openLogSheet(item: TConsumable) {
-  logSheetItem.value = item;
-  meterReading.value = latestMeterLiters.value;
-}
-
-function submitReplacement() {
-  if (!logSheetItem.value) {
-    return;
-  }
-
+function logReplacement(item: TConsumable, meterLiters: number) {
   maintenanceLogs.value.push({
     id: `maint-${maintenanceLogs.value.length + 1}`,
-    consumableId: logSheetItem.value.id,
+    consumableId: item.id,
     at: new Date().toISOString(),
-    meterLiters: meterReading.value,
+    meterLiters,
   });
-
-  logSheetItem.value = undefined;
-  toast.show("Saved");
 }
 
 function maintenanceActions({ item }: { item: TConsumable }): TRowAction[] {
-  return [{ label: "Log replacement", onSelect: () => openLogSheet(item) }];
+  return [{ label: "Log replacement", onSelect: () => (logSheetItem.value = item) }];
 }
 </script>
 
@@ -93,17 +78,6 @@ function maintenanceActions({ item }: { item: TConsumable }): TRowAction[] {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet :open="logSheetItem != null" title="Log replacement" @update:open="logSheetItem = undefined">
-      <div class="flex flex-col gap-4">
-        <p class="text-sm text-zinc-500">{{ logSheetItem?.name }}</p>
-        <UiStepper v-model="meterReading" label="Meter reading (liters)" :min="0" :max="999999" :step="10" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="submitReplacement">Save replacement</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <MaintenanceLogSheet v-model:item="logSheetItem" :latest-meter-liters="latestMeterLiters" @submit="logReplacement" />
   </div>
 </template>

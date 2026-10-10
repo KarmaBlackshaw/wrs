@@ -7,8 +7,6 @@ definePage({ meta: { title: "Readings" } });
 
 const { employeeName } = useEmployeeLookup();
 
-const toast = useToast();
-
 const logColumns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "label", label: "Type" },
   { key: "detail", label: "Detail" },
@@ -39,34 +37,13 @@ const rows = computed(() => {
 });
 
 const sheetOpen = ref(false);
-const tdsInput = ref("");
-const phInput = ref("");
-const meterInput = ref("");
-
-const canSubmit = computed(() => tdsInput.value.trim() !== "" || meterInput.value.trim() !== "");
-
-function openSheet() {
-  tdsInput.value = "";
-  phInput.value = "";
-  meterInput.value = "";
-  sheetOpen.value = true;
-}
-
-function submitReading() {
-  if (!canSubmit.value) {
-    return;
-  }
-
-  sheetOpen.value = false;
-  toast.show("Saved");
-}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <UiDataTable title="Readings" :icon="IconClipboardText" :columns="logColumns" :rows="rows" :row-key="(row) => row.id">
       <template #actions>
-        <UiButton @click="openSheet">Log reading</UiButton>
+        <UiButton @click="sheetOpen = true">Log reading</UiButton>
       </template>
       <template #cell-detail="{ row }">
         <div class="flex flex-col gap-0.5">
@@ -83,26 +60,6 @@ function submitReading() {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet v-model:open="sheetOpen" title="Log reading">
-      <div class="flex flex-col gap-4">
-        <div>
-          <p class="mb-1.5 text-sm font-medium text-zinc-700">TDS (ppm)</p>
-          <UiNumberPad v-model="tdsInput" />
-        </div>
-        <div>
-          <p class="mb-1.5 text-sm font-medium text-zinc-700">pH (optional)</p>
-          <UiNumberPad v-model="phInput" />
-        </div>
-        <div>
-          <p class="mb-1.5 text-sm font-medium text-zinc-700">Meter liters (optional)</p>
-          <UiNumberPad v-model="meterInput" />
-        </div>
-      </div>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton :disabled="!canSubmit" @click="submitReading">Save reading</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <WaterReadingSheet v-model:open="sheetOpen" />
   </div>
 </template>

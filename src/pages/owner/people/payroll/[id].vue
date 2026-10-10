@@ -51,24 +51,14 @@ function carriedOver(line: TPayLine) {
 }
 
 const adjustLine = ref<TPayLine>();
-const adjustAmount = ref("");
 
-function openAdjust(line: TPayLine) {
-  adjustLine.value = line;
-  adjustAmount.value = "";
-}
-
-function submitAdjust() {
-  if (!adjustLine.value || !Number(adjustAmount.value)) {
+function applyAdjust(delta: number) {
+  if (!adjustLine.value) {
     return;
   }
 
-  const delta = Math.round(Number(adjustAmount.value) * 100);
-
   adjustLine.value.adjustments += delta;
   adjustLine.value.net += delta;
-  adjustLine.value = undefined;
-  toast.show("Saved");
 }
 
 async function finalizeRun() {
@@ -88,7 +78,7 @@ async function finalizeRun() {
 }
 
 function lineActions(line: TPayLine): TRowAction[] {
-  return run.value?.status === "draft" ? [{ label: "Adjust", onSelect: () => openAdjust(line) }] : [];
+  return run.value?.status === "draft" ? [{ label: "Adjust", onSelect: () => (adjustLine.value = line) }] : [];
 }
 </script>
 
@@ -138,18 +128,7 @@ function lineActions(line: TPayLine): TRowAction[] {
       </template>
     </UiDataTable>
 
-    <UiBottomSheet :open="adjustLine != null" title="Adjust pay line" @update:open="adjustLine = undefined">
-      <div class="flex flex-col gap-4">
-        <p class="text-sm text-zinc-500">{{ adjustLine ? employeeName(adjustLine.employeeId) : "" }}</p>
-        <UiField v-model="adjustAmount" label="Adjustment amount (₱, use negative to deduct)" type="number" inputmode="decimal" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="submitAdjust">Save adjustment</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <PayrollAdjustSheet v-model:line="adjustLine" @submit="applyAdjust" />
   </div>
 
   <UiEmptyState v-else title="Payroll run not found">

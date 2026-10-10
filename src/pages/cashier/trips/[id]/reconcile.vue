@@ -20,9 +20,7 @@ const hasVariance = computed(() => summary.fullVariance !== 0 || summary.emptyVa
 
 const suggestedShortageCash = computed(() => Math.max(0, -summary.cashVariance));
 const shortageSheetOpen = ref(false);
-const shortageCashPad = ref("");
-const shortageCashAmount = computed(() => padToCentavos(shortageCashPad.value));
-const shortageContainers = ref(Math.max(0, -summary.fullVariance));
+const initialShortageContainers = Math.max(0, -summary.fullVariance);
 
 const voidSheetOpen = ref(false);
 const voidTargetSummary = ref("");
@@ -46,11 +44,6 @@ const deliveryRows = summary.deliveries.map((delivery) => ({ ...delivery, custom
 function openVoid(delivery: (typeof summary.deliveries)[number]) {
   voidTargetSummary.value = `Delivery to ${customerName(delivery.customerId)}, ${delivery.delivered} delivered, ${formatMoney(delivery.amount)}`;
   voidSheetOpen.value = true;
-}
-
-function recordShortage() {
-  toast.show("Saved");
-  shortageSheetOpen.value = false;
 }
 
 function reconcile() {
@@ -113,22 +106,7 @@ function deliveryActions(delivery: (typeof deliveryRows)[number]): TRowAction[] 
 
     <UiButton v-if="hasVariance" variant="secondary" @click="shortageSheetOpen = true">Record shortage</UiButton>
 
-    <UiBottomSheet v-model:open="shortageSheetOpen" title="Record shortage">
-      <div class="flex flex-col gap-4">
-        <UiStepper v-model="shortageContainers" label="Containers short" :min="0" :max="999" />
-        <p class="text-center"><UiMoneyText :centavos="shortageCashAmount" size="xl" /></p>
-        <UiButton v-if="suggestedShortageCash > 0" variant="ghost" @click="shortageCashPad = String(suggestedShortageCash)">
-          Use {{ formatMoney(suggestedShortageCash) }}
-        </UiButton>
-        <UiNumberPad v-model="shortageCashPad" />
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <UiButton @click="recordShortage">Save shortage</UiButton>
-        </div>
-      </template>
-    </UiBottomSheet>
+    <TripShortageSheet v-model:open="shortageSheetOpen" :suggested-shortage-cash="suggestedShortageCash" :initial-containers="initialShortageContainers" />
 
     <VoidRequestSheet v-model:open="voidSheetOpen" :summary="voidTargetSummary" />
   </div>
