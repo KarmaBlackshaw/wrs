@@ -9,4 +9,5 @@ export * from "./prices";
 export * from "./reports";
 export * from "./strings";
 export * from "./trips";
+export * from "./variance";
 export * from "./water";

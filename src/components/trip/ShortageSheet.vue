@@ -7,8 +7,7 @@ const props = defineProps<{
 }>();
 
 const toast = useToast();
-const shortageCashPad = ref("");
-const shortageCashAmount = computed(() => padToCentavos(shortageCashPad.value));
+const shortageCashAmount = ref(0);
 const shortageContainers = ref(props.initialContainers);
 
 function recordShortage() {
@@ -21,11 +20,7 @@ function recordShortage() {
   <UiBottomSheet v-model:open="open" title="Record shortage">
     <div class="flex flex-col gap-4">
       <UiStepper v-model="shortageContainers" label="Containers short" :min="0" :max="999" />
-      <p class="text-center"><UiMoneyText :centavos="shortageCashAmount" size="xl" /></p>
-      <UiButton v-if="suggestedShortageCash > 0" variant="ghost" @click="shortageCashPad = String(suggestedShortageCash)">
-        Use {{ formatMoney(suggestedShortageCash) }}
-      </UiButton>
-      <UiNumberPad v-model="shortageCashPad" />
+      <UiMoneyPad v-model="shortageCashAmount" :suggestion="suggestedShortageCash" />
     </div>
 
     <template #footer>

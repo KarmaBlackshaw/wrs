@@ -17,8 +17,7 @@ const counted = ref<Record<string, { full: number; empty: number }>>(
   )
 );
 
-const cashPad = ref("");
-const cashAmount = computed(() => padToCentavos(cashPad.value));
+const cashAmount = ref(0);
 
 function setFull(productId: string, qty: number) {
   const entry = counted.value[productId];
@@ -78,9 +77,7 @@ function submit() {
 
     <UiCard title="Cash">
       <p class="text-sm text-zinc-500">Expected <UiMoneyText :centavos="summary.expectedCash" size="sm" /></p>
-      <p class="mt-2 text-center"><UiMoneyText :centavos="cashAmount" size="xl" /></p>
-      <UiButton variant="ghost" @click="cashPad = String(summary.expectedCash)">Use {{ formatMoney(summary.expectedCash) }}</UiButton>
-      <UiNumberPad v-model="cashPad" />
+      <UiMoneyPad v-model="cashAmount" class="mt-2" :suggestion="summary.expectedCash" />
     </UiCard>
   </div>
 </template>

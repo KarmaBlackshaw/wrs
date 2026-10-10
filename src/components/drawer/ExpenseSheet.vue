@@ -10,10 +10,8 @@ const toast = useToast();
 
 const expenseCategory = ref(expenseCategories[0] ?? "");
 const expenseCategoryOptions = expenseCategories.map((category) => ({ value: category, label: category }));
-const expensePad = ref("");
+const expenseAmount = ref(0);
 const expenseNote = ref("");
-
-const expenseAmount = computed(() => padToCentavos(expensePad.value));
 
 function confirmExpense() {
   if (expenseAmount.value <= 0 || !expenseCategory.value) {
@@ -21,7 +19,7 @@ function confirmExpense() {
   }
 
   emit("submit", { category: expenseCategory.value, amount: expenseAmount.value, note: expenseNote.value.trim() });
-  expensePad.value = "";
+  expenseAmount.value = 0;
   expenseNote.value = "";
   open.value = false;
   toast.show("Saved");
@@ -32,8 +30,7 @@ function confirmExpense() {
   <UiBottomSheet v-model:open="open" title="Drawer expense">
     <div class="flex flex-col gap-4">
       <UiSelect v-model="expenseCategory" label="Category" :options="expenseCategoryOptions" />
-      <p class="text-center"><UiMoneyText :centavos="expenseAmount" size="xl" /></p>
-      <UiNumberPad v-model="expensePad" />
+      <UiMoneyPad v-model="expenseAmount" />
       <UiField v-model="expenseNote" label="Note" hint="Optional" />
     </div>
 

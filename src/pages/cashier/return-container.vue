@@ -59,15 +59,7 @@ function confirm() {
     </UiEmptyState>
 
     <template v-else>
-      <UiCard>
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex flex-col">
-            <span class="text-base font-medium text-zinc-900">{{ customer.name }}</span>
-            <span class="text-sm text-zinc-500">{{ customer.address }}</span>
-          </div>
-          <UiButton variant="ghost" @click="customerSheetOpen = true">Change</UiButton>
-        </div>
-      </UiCard>
+      <CustomerSelectedCard :customer @change="customerSheetOpen = true" />
 
       <UiEmptyState v-if="holdings.length === 0" title="No containers on file" description="This customer has no recorded container holdings.">
         <template #action>

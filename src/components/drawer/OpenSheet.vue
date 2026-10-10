@@ -8,13 +8,11 @@ const { suggestedOpeningCash } = defineProps<{
 const emit = defineEmits<{ submit: [openingCash: number] }>();
 
 const toast = useToast();
-const openPad = ref("");
-
-const openAmount = computed(() => padToCentavos(openPad.value));
+const openAmount = ref(0);
 
 function confirmOpen() {
   emit("submit", openAmount.value);
-  openPad.value = "";
+  openAmount.value = 0;
   open.value = false;
   toast.show("Saved");
 }
@@ -23,11 +21,7 @@ function confirmOpen() {
 <template>
   <UiBottomSheet v-model:open="open" title="Open drawer">
     <div class="flex flex-col gap-4">
-      <p class="text-center"><UiMoneyText :centavos="openAmount" size="xl" /></p>
-      <UiButton v-if="suggestedOpeningCash > 0" variant="ghost" @click="openPad = String(suggestedOpeningCash)">
-        Use {{ formatMoney(suggestedOpeningCash) }}
-      </UiButton>
-      <UiNumberPad v-model="openPad" />
+      <UiMoneyPad v-model="openAmount" :suggestion="suggestedOpeningCash" />
     </div>
 
     <template #footer>

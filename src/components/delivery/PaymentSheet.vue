@@ -8,17 +8,17 @@ const { customer } = defineProps<{
 }>();
 
 const toast = useToast();
-const paymentAmountInput = ref("");
+const paymentAmount = ref(0);
 
 watch(open, (isOpen) => {
   if (isOpen) {
-    paymentAmountInput.value = "";
+    paymentAmount.value = 0;
   }
 });
 
 function confirmCollectPayment() {
   open.value = false;
-  paymentAmountInput.value = "";
+  paymentAmount.value = 0;
   toast.show("Saved");
 }
 </script>
@@ -28,9 +28,7 @@ function confirmCollectPayment() {
     <div class="flex flex-col gap-4">
       <p class="text-base text-zinc-700">Credit balance for {{ customer.name }}</p>
       <UiMoneyText :centavos="customer.creditBalance" size="sm" tone="warn" />
-      <UiMoneyText :centavos="padToCentavos(paymentAmountInput)" size="xl" />
-      <UiButton variant="ghost" @click="paymentAmountInput = String(customer.creditBalance)">Use {{ formatMoney(customer.creditBalance) }}</UiButton>
-      <UiNumberPad v-model="paymentAmountInput" />
+      <UiMoneyPad v-model="paymentAmount" :suggestion="customer.creditBalance" />
     </div>
     <template #footer>
       <div class="flex justify-end gap-2">

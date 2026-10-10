@@ -60,9 +60,7 @@ function submit() {
             :max="999"
             @update:model-value="(value) => setFull(holding.type, value)"
           />
-          <UiStatusPill class="mt-2" :tone="variance(holding.type, 'full') === 0 ? 'ok' : 'danger'">
-            {{ variance(holding.type, "full") === 0 ? "Matches" : `${variance(holding.type, "full")} off` }}
-          </UiStatusPill>
+          <UiVariancePill class="mt-2" :value="variance(holding.type, 'full')" />
         </div>
         <div>
           <UiStepper
@@ -72,9 +70,7 @@ function submit() {
             :max="999"
             @update:model-value="(value) => setEmpty(holding.type, value)"
           />
-          <UiStatusPill class="mt-2" :tone="variance(holding.type, 'empty') === 0 ? 'ok' : 'danger'">
-            {{ variance(holding.type, "empty") === 0 ? "Matches" : `${variance(holding.type, "empty")} off` }}
-          </UiStatusPill>
+          <UiVariancePill class="mt-2" :value="variance(holding.type, 'empty')" />
         </div>
       </div>
     </UiCard>

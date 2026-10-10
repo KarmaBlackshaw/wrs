@@ -8,26 +8,18 @@ const { expectedCash } = defineProps<{
 const emit = defineEmits<{ submit: [] }>();
 
 const toast = useToast();
-const countPad = ref("");
-
-const countedCash = computed(() => padToCentavos(countPad.value));
+const countedCash = ref(0);
 
 const variance = computed(() => countedCash.value - expectedCash);
 
 const varianceTone = computed(() => (variance.value === 0 ? "ok" : "danger"));
 
-const varianceText = computed(() => {
-  if (variance.value === 0) {
-    return "Exact match";
-  }
-
-  return variance.value > 0 ? `Over ${formatMoney(variance.value)}` : `Short ${formatMoney(Math.abs(variance.value))}`;
-});
+const varianceText = computed(() => formatVariance(variance.value, true));
 
 function confirmClose() {
   emit("submit");
   open.value = false;
-  countPad.value = "";
+  countedCash.value = 0;
   toast.show("Saved");
 }
 </script>
@@ -36,9 +28,7 @@ function confirmClose() {
   <UiBottomSheet v-model:open="open" title="Close with count">
     <div class="flex flex-col gap-4">
       <UiStatCard label="Expected cash"><UiMoneyText :centavos="expectedCash" size="lg" /></UiStatCard>
-      <p class="text-center"><UiMoneyText :centavos="countedCash" size="xl" /></p>
-      <UiButton variant="ghost" @click="countPad = String(expectedCash)">Use {{ formatMoney(expectedCash) }}</UiButton>
-      <UiNumberPad v-model="countPad" />
+      <UiMoneyPad v-model="countedCash" :suggestion="expectedCash" />
       <p class="text-center text-lg font-semibold" :class="varianceTone === 'ok' ? 'text-emerald-700' : 'text-red-700'">
         {{ varianceText }}
       </p>

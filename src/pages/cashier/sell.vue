@@ -6,6 +6,7 @@ import { containerTypes } from "@/mocks/containerTypes";
 definePage({ meta: { title: "Walk-in sale" } });
 
 const toast = useToast();
+const confirmDialog = useConfirm();
 
 const activeProducts = products.filter((product) => product.active);
 
@@ -19,7 +20,6 @@ const ownershipOptions: TOption<typeof ownership.value>[] = [
 const paymentType = ref<TPaymentType>("cash");
 const customer = ref<TCustomer>();
 const customerSheetOpen = ref(false);
-const confirmOpen = ref(false);
 
 function qtyFor(productId: string) {
   return cart.value[productId] ?? 0;
@@ -72,10 +72,21 @@ function reset() {
   ownership.value = "own";
   paymentType.value = "cash";
   customer.value = undefined;
-  confirmOpen.value = false;
 }
 
-function confirmSale() {
+async function confirmSale() {
+  const itemLines = cartLines.value.map((line) => `${line.qty}× ${line.product.name}: ${formatMoney(line.qty * line.price)}`);
+  const depositLines = depositAmount.value > 0 ? [`Deposit: ${formatMoney(depositAmount.value)}`] : [];
+
+  const isConfirmed = await confirmDialog.confirm({
+    title: "Confirm sale",
+    message: [...itemLines, ...depositLines, `Total: ${formatMoney(total.value)}`].join("\n"),
+  });
+
+  if (!isConfirmed) {
+    return;
+  }
+
   toast.show("Saved");
   reset();
 }
@@ -98,15 +109,9 @@ function confirmSale() {
       <p v-if="ownership === 'borrowed'" class="mt-3 text-sm text-zinc-500">Deposit due: <UiMoneyText :centavos="depositAmount" size="sm" /></p>
     </UiCard>
 
-    <UiCard title="Customer" v-if="requiresCustomer || customer">
-      <div v-if="customer" class="flex items-center justify-between gap-2">
-        <div class="flex flex-col">
-          <span class="text-base font-medium text-zinc-900">{{ customer.name }}</span>
-          <span class="text-sm text-zinc-500">{{ customer.address }}</span>
-        </div>
-        <UiButton variant="ghost" @click="customerSheetOpen = true">Change</UiButton>
-      </div>
-      <UiButton v-else variant="secondary" @click="customerSheetOpen = true">Select customer</UiButton>
+    <CustomerSelectedCard v-if="customer" title="Customer" :customer @change="customerSheetOpen = true" />
+    <UiCard v-else-if="requiresCustomer" title="Customer">
+      <UiButton variant="secondary" @click="customerSheetOpen = true">Select customer</UiButton>
     </UiCard>
 
     <UiCard title="Payment">
@@ -120,31 +125,9 @@ function confirmSale() {
     </div>
 
     <div class="flex justify-end">
-      <UiButton :disabled="!canConfirm" @click="confirmOpen = true">Confirm sale</UiButton>
+      <UiButton :disabled="!canConfirm" @click="confirmSale">Confirm sale</UiButton>
     </div>
 
     <CashierCustomerPickerSheet v-model:open="customerSheetOpen" @select="onSelectCustomer" />
-
-    <UiDialog v-model:open="confirmOpen" title="Confirm sale">
-      <div class="flex flex-col gap-2">
-        <div v-for="line in cartLines" :key="line.product.id" class="flex items-center justify-between">
-          <span>{{ line.qty }}× {{ line.product.name }}</span>
-          <UiMoneyText :centavos="line.qty * line.price" />
-        </div>
-        <div v-if="depositAmount > 0" class="flex items-center justify-between">
-          <span>Deposit</span>
-          <UiMoneyText :centavos="depositAmount" />
-        </div>
-        <div class="flex items-center justify-between border-t border-zinc-200 pt-2">
-          <span class="font-semibold">Total</span>
-          <UiMoneyText :centavos="total" size="lg" />
-        </div>
-      </div>
-
-      <template #footer>
-        <UiButton variant="ghost" @click="confirmOpen = false">Cancel</UiButton>
-        <UiButton @click="confirmSale">Confirm</UiButton>
-      </template>
-    </UiDialog>
   </div>
 </template>

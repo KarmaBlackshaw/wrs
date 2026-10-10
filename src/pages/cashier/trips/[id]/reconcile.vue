@@ -73,25 +73,17 @@ function deliveryActions(delivery: (typeof deliveryRows)[number]): TRowAction[] 
 
     <UiDataTable :columns="productColumns" :rows="productRows" :row-key="(row) => row.productId">
       <template #cell-full="{ row }">
-        <UiStatusPill :tone="row.fullVariance === 0 ? 'ok' : 'danger'">{{ row.fullVariance === 0 ? "Matches" : `${row.fullVariance} off` }}</UiStatusPill>
+        <UiVariancePill :value="row.fullVariance" />
       </template>
       <template #cell-empty="{ row }">
-        <UiStatusPill :tone="row.emptyVariance === 0 ? 'ok' : 'danger'">{{ row.emptyVariance === 0 ? "Matches" : `${row.emptyVariance} off` }}</UiStatusPill>
+        <UiVariancePill :value="row.emptyVariance" />
       </template>
     </UiDataTable>
 
     <UiCard title="Cash">
       <div class="flex items-center justify-between">
         <span class="text-sm text-zinc-500">Expected <UiMoneyText :centavos="summary.expectedCash" size="sm" /></span>
-        <UiStatusPill :tone="summary.cashVariance === 0 ? 'ok' : 'danger'">
-          {{
-            summary.cashVariance === 0
-              ? "Matches"
-              : summary.cashVariance > 0
-                ? `Over ${formatMoney(summary.cashVariance)}`
-                : `Short ${formatMoney(Math.abs(summary.cashVariance))}`
-          }}
-        </UiStatusPill>
+        <UiVariancePill :value="summary.cashVariance" is-money />
       </div>
     </UiCard>
 

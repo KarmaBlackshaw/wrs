@@ -7,9 +7,8 @@ const toast = useToast();
 
 const customer = ref<TCustomer>();
 const customerSheetOpen = ref(true);
-const pad = ref("");
+const amount = ref(0);
 
-const amount = computed(() => padToCentavos(pad.value));
 const canConfirm = computed(() => customer.value != null && amount.value > 0);
 
 function onSelectCustomer(picked: TCustomer) {
@@ -22,7 +21,7 @@ function confirm() {
   }
 
   toast.show("Saved");
-  pad.value = "";
+  amount.value = 0;
   customerSheetOpen.value = true;
   customer.value = undefined;
 }
@@ -43,14 +42,7 @@ function confirm() {
     </UiEmptyState>
 
     <template v-else>
-      <UiCard>
-        <div class="flex items-center justify-between gap-2">
-          <div class="flex flex-col">
-            <span class="text-base font-medium text-zinc-900">{{ customer.name }}</span>
-            <span class="text-sm text-zinc-500">{{ customer.address }}</span>
-          </div>
-          <UiButton variant="ghost" @click="customerSheetOpen = true">Change</UiButton>
-        </div>
+      <CustomerSelectedCard :customer @change="customerSheetOpen = true">
         <div class="mt-3 flex items-center justify-between">
           <span class="text-base text-zinc-700">Balance</span>
           <UiMoneyText :centavos="customer.creditBalance" size="lg" :tone="customer.creditBalance > 0 ? 'warn' : 'default'" />
@@ -58,13 +50,9 @@ function confirm() {
         <div class="mt-2 flex justify-end">
           <UiStatusPill :tone="AGING_TONE[customer.agingBucket]">{{ AGING_LABEL[customer.agingBucket] }}</UiStatusPill>
         </div>
-      </UiCard>
+      </CustomerSelectedCard>
 
-      <p class="text-center"><UiMoneyText :centavos="amount" size="xl" /></p>
-      <UiButton v-if="customer.creditBalance > 0" variant="ghost" @click="pad = String(customer.creditBalance)">
-        Use full balance ({{ formatMoney(customer.creditBalance) }})
-      </UiButton>
-      <UiNumberPad v-model="pad" />
+      <UiMoneyPad v-model="amount" :suggestion="customer.creditBalance" />
     </template>
 
     <CashierCustomerPickerSheet v-model:open="customerSheetOpen" :allow-quick-add="false" @select="onSelectCustomer" />

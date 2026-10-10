@@ -9,7 +9,7 @@ const requestTypeOptions = [
 ];
 
 const requestType = ref("advance");
-const amountInput = ref("");
+const amount = ref(0);
 const termMonths = ref(3);
 
 watch(open, (isOpen) => {
@@ -18,11 +18,11 @@ watch(open, (isOpen) => {
   }
 
   requestType.value = "advance";
-  amountInput.value = "";
+  amount.value = 0;
   termMonths.value = 3;
 });
 
-const canSubmit = computed(() => padToCentavos(amountInput.value) > 0);
+const canSubmit = computed(() => amount.value > 0);
 
 function submit() {
   if (!canSubmit.value) {
@@ -40,8 +40,7 @@ function submit() {
       <UiSegmentedControl v-model="requestType" :options="requestTypeOptions" />
       <div>
         <p class="mb-1.5 text-sm font-medium text-zinc-700">Amount</p>
-        <UiMoneyText :centavos="padToCentavos(amountInput)" size="lg" />
-        <UiNumberPad v-model="amountInput" />
+        <UiMoneyPad v-model="amount" />
       </div>
       <UiStepper v-if="requestType === 'loan'" v-model="termMonths" label="Term (months)" :min="1" :max="24" />
     </div>

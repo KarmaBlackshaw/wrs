@@ -16,7 +16,7 @@ onMounted(() => {
 
 <template>
   <UiDialog :open :title @update:open="emit('settle', false)">
-    <p>{{ message }}</p>
+    <p class="whitespace-pre-line">{{ message }}</p>
 
     <template #footer>
       <UiButton variant="secondary" @click="emit('settle', false)">Cancel</UiButton>

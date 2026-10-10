@@ -7,16 +7,16 @@ const { depositAmount } = defineProps<{
 
 const emit = defineEmits<{ submit: [deposit: number] }>();
 
-const depositInput = ref("");
+const deposit = ref(0);
 
 watch(open, (isOpen) => {
   if (isOpen) {
-    depositInput.value = "";
+    deposit.value = 0;
   }
 });
 
 function confirmDeposit() {
-  emit("submit", padToCentavos(depositInput.value));
+  emit("submit", deposit.value);
   open.value = false;
 }
 </script>
@@ -25,9 +25,7 @@ function confirmDeposit() {
   <UiBottomSheet v-model:open="open" title="Collect deposit">
     <div class="flex flex-col gap-4">
       <p class="text-base text-zinc-700">Collect a deposit for the borrowed container before confirming.</p>
-      <UiMoneyText :centavos="padToCentavos(depositInput)" size="xl" />
-      <UiButton variant="ghost" @click="depositInput = String(depositAmount)">Use {{ formatMoney(depositAmount) }}</UiButton>
-      <UiNumberPad v-model="depositInput" />
+      <UiMoneyPad v-model="deposit" :suggestion="depositAmount" />
     </div>
     <template #footer>
       <div class="flex justify-end gap-2">

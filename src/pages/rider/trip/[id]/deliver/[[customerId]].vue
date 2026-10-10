@@ -11,6 +11,7 @@ definePage({ meta: { title: "Log delivery" } });
 const route = useRoute();
 const router = useRouter();
 const toast = useToast();
+const confirmDialog = useConfirm();
 
 const tripId = computed(() => String(route.params.id));
 
@@ -90,18 +91,24 @@ const canConfirm = computed(() => blockReason.value === null);
 
 const collectPaymentOpen = ref(false);
 
-const confirmOpen = ref(false);
-
-function openConfirmDialog() {
-  if (!canConfirm.value) {
+async function confirmDelivery() {
+  if (!canConfirm.value || !customer.value) {
     return;
   }
 
-  confirmOpen.value = true;
-}
+  const isConfirmed = await confirmDialog.confirm({
+    title: "Confirm delivery",
+    message: [
+      customer.value.name,
+      formatMoney(amount.value),
+      `${delivered.value} delivered · ${empties.value} empties · ${PAYMENT_LABEL[paymentType.value]}`,
+    ].join("\n"),
+  });
 
-function confirmDelivery() {
-  confirmOpen.value = false;
+  if (!isConfirmed) {
+    return;
+  }
+
   toast.show("Saved");
   router.push(ROUTES.RIDER.INDEX);
 }
@@ -165,24 +172,12 @@ function pickCustomer(candidate: TCustomer) {
 
       <div class="flex flex-col gap-2">
         <p v-if="blockReason" class="text-sm font-medium text-red-700">{{ blockReason }}</p>
-        <UiButton :disabled="!canConfirm" @click="openConfirmDialog">Confirm delivery</UiButton>
+        <UiButton :disabled="!canConfirm" @click="confirmDelivery">Confirm delivery</UiButton>
       </div>
 
       <DeliveryDepositSheet v-model:open="depositSheetOpen" :deposit-amount="depositSuggestion" @submit="depositCollected = $event" />
 
       <DeliveryPaymentSheet v-model:open="collectPaymentOpen" :customer="customer" />
-
-      <UiDialog v-model:open="confirmOpen" title="Confirm delivery">
-        <div class="flex flex-col items-center gap-2 py-2">
-          <p class="text-base text-zinc-500">{{ customer.name }}</p>
-          <UiMoneyText :centavos="amount" size="xl" />
-          <p class="text-sm text-zinc-500">{{ delivered }} delivered · {{ empties }} empties · {{ PAYMENT_LABEL[paymentType] }}</p>
-        </div>
-        <template #footer>
-          <UiButton variant="secondary" @click="confirmOpen = false">Cancel</UiButton>
-          <UiButton @click="confirmDelivery">Confirm</UiButton>
-        </template>
-      </UiDialog>
     </template>
   </div>
 </template>
