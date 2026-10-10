@@ -52,7 +52,7 @@ export { default as IconXCircleFill } from "./icon/XCircleFill.vue";
 export { default as LayoutAccountControls } from "./layout/AccountControls.vue";
 export { default as LayoutHeaderActions } from "./layout/HeaderActions.vue";
 export { default as LayoutShell } from "./layout/Shell.vue";
-export { default as RiderCustomerSearchList } from "./rider/CustomerSearchList.vue";
+export { default as RiderCustomerList } from "./rider/CustomerList.vue";
 export { default as UiBottomSheet } from "./ui/BottomSheet.vue";
 export { default as UiButton } from "./ui/Button.vue";
 export { default as UiCard } from "./ui/Card.vue";

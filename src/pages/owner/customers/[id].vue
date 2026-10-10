@@ -4,7 +4,7 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customer" } });
 
-const { employeeName } = useEmployeeLookup();
+const { employeeName, riderOptions } = useEmployeeLookup();
 const { findCustomer } = useCustomerLookup();
 
 const route = useRoute("/owner/customers/[id]");
@@ -12,6 +12,8 @@ const toast = useToast();
 const confirmDialog = useConfirm();
 
 const customer = computed(() => findCustomer(route.params.id));
+const riderName = computed(() => (customer.value?.riderId ? employeeName(customer.value.riderId) : "Open"));
+const headerSubtitle = computed(() => (customer.value ? `${customer.value.phone} · ${customer.value.address} · ${riderName.value}` : ""));
 
 const historyColumns = [
   { key: "date", label: "Date" },
@@ -82,6 +84,8 @@ const editSheetOpen = ref(false);
 const nameDraft = ref("");
 const phoneDraft = ref("");
 const addressDraft = ref("");
+const riderDraft = ref("");
+const riderDraftOptions = [{ value: "", label: "Open" }, ...riderOptions];
 const canSaveCustomer = computed(() => nameDraft.value.trim().length > 0 && phoneDraft.value.trim().length > 0);
 
 function openEditSheet() {
@@ -92,6 +96,7 @@ function openEditSheet() {
   nameDraft.value = customer.value.name;
   phoneDraft.value = customer.value.phone;
   addressDraft.value = customer.value.address;
+  riderDraft.value = customer.value.riderId ?? "";
   editSheetOpen.value = true;
 }
 
@@ -103,7 +108,7 @@ function submitEdit() {
 
 <template>
   <div v-if="customer" class="flex flex-col gap-4">
-    <UiPageHeader :title="customer.name" :subtitle="`${customer.phone} · ${customer.address}`" :back="ROUTES.OWNER.CUSTOMERS.INDEX">
+    <UiPageHeader :title="customer.name" :subtitle="headerSubtitle" :back="ROUTES.OWNER.CUSTOMERS.INDEX">
       <template #actions>
         <UiButton variant="secondary" @click="openEditSheet">Edit</UiButton>
       </template>
@@ -164,6 +169,7 @@ function submitEdit() {
         <UiField v-model="nameDraft" label="Name" />
         <UiField v-model="phoneDraft" label="Phone" type="tel" />
         <UiField v-model="addressDraft" label="Address" />
+        <UiSelect v-model="riderDraft" label="Rider" :options="riderDraftOptions" />
       </div>
 
       <template #footer>

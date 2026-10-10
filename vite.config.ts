@@ -3,7 +3,6 @@ import { fileURLToPath, URL } from "node:url";
 import { defineConfig } from "vite";
 import Vue from "@vitejs/plugin-vue";
 import VueRouter from "vue-router/vite";
-import VueDevTools from "vite-plugin-vue-devtools";
 import tailwindcss from "@tailwindcss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
@@ -20,7 +19,6 @@ export default defineConfig({
     }),
     // Vue must be placed AFTER VueRouter()
     Vue(),
-    VueDevTools(),
     AutoImport({
       dirs: ["./src/composables", "./src/utils", "./src/types/labels", "./src/stores"],
       imports: ["pinia", "vue", "vue-router", "@vueuse/core"],

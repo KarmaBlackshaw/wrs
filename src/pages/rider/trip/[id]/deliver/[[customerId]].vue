@@ -147,7 +147,7 @@ function pickCustomer(candidate: TCustomer) {
 
     <UiEmptyState v-if="!trip" title="Trip not found" description="This trip may not exist." />
 
-    <RiderCustomerSearchList v-else-if="!customer" :get-to="pickCustomer" />
+    <RiderCustomerList v-else-if="!customer" :get-to="pickCustomer" />
 
     <template v-else>
       <UiCard title="Customer">

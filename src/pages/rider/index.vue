@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import { IconUsers } from "@/components";
 import { customers } from "@/mocks/customers";
 import { ROUTES } from "@/types";
+import type { TCustomer } from "@/types";
 
 definePage({ meta: { title: "Today's trip" } });
 
@@ -9,6 +11,22 @@ const summary = computed(() => (openTrip.value ? tripSummary(openTrip.value.id) 
 
 function deliveryFor(customerId: string) {
   return summary.value?.deliveries.find((delivery) => delivery.customerId === customerId);
+}
+
+const columns = [
+  { key: "name", label: "Name" },
+  { key: "address", label: "Address" },
+  { key: "status", label: "Status", align: "right" as const },
+];
+
+const router = useRouter();
+
+function deliverTo(customer: TCustomer) {
+  if (!openTrip.value || deliveryFor(customer.id)) {
+    return;
+  }
+
+  router.push(ROUTES.RIDER.DELIVER(openTrip.value.id, customer.id));
 }
 </script>
 
@@ -29,22 +47,12 @@ function deliveryFor(customerId: string) {
         <UiStatCard label="Left" :tone="summary.expectedFull === 0 ? 'ok' : 'default'">{{ summary.expectedFull }}</UiStatCard>
       </div>
 
-      <UiCard title="Customers">
-        <div class="-m-4 divide-y divide-zinc-100">
-          <UiListItem
-            v-for="customer in customers"
-            :key="customer.id"
-            :title="customer.name"
-            :subtitle="customer.address"
-            :to="deliveryFor(customer.id) ? undefined : ROUTES.RIDER.DELIVER(openTrip.id, customer.id)"
-          >
-            <template #trailing>
-              <UiStatusPill v-if="deliveryFor(customer.id)" tone="ok">Delivered</UiStatusPill>
-              <span v-else class="text-sm font-medium text-brand-700">Deliver</span>
-            </template>
-          </UiListItem>
-        </div>
-      </UiCard>
+      <UiDataTable clickable title="Customers" :icon="IconUsers" :columns="columns" :rows="customers" :row-key="(row) => row.id" @row-click="deliverTo">
+        <template #cell-status="{ row }">
+          <UiStatusPill v-if="deliveryFor(row.id)" tone="ok">Delivered</UiStatusPill>
+          <span v-else class="text-sm font-medium text-brand-700">Deliver</span>
+        </template>
+      </UiDataTable>
     </template>
   </div>
 </template>

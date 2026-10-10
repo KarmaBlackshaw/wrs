@@ -4,6 +4,8 @@ export const ROUTES = {
   RIDER: {
     INDEX: "/rider",
     CUSTOMERS: "/rider/customers",
+    CUSTOMERS_OPEN: "/rider/customers/open",
+    CUSTOMERS_ALL: "/rider/customers/all",
     TRIP_RETURN: (tripId: string) => `/rider/trip/${tripId}/return`,
     DELIVER: (tripId: string, customerId?: string) => `/rider/trip/${tripId}/deliver${customerId ? `/${customerId}` : ""}`,
   },
@@ -78,6 +80,14 @@ export const ROUTES = {
     },
   },
 } as const;
+
+export const RIDER_TABS = {
+  CUSTOMERS: [
+    { label: "Mine", to: ROUTES.RIDER.CUSTOMERS },
+    { label: "Open", to: ROUTES.RIDER.CUSTOMERS_OPEN },
+    { label: "All", to: ROUTES.RIDER.CUSTOMERS_ALL },
+  ],
+};
 
 export const OWNER_TABS = {
   CONTAINERS: [

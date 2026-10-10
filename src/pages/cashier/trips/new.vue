@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { employees } from "@/mocks/employees";
 import { products } from "@/mocks/products";
 import { ROUTES } from "@/types";
 
@@ -8,8 +7,7 @@ definePage({ meta: { title: "New load-out" } });
 const router = useRouter();
 const toast = useToast();
 
-const riders = employees.filter((employee) => employee.active && employee.roles.includes("rider"));
-const riderOptions = riders.map((rider) => ({ value: rider.id, label: rider.name }));
+const { riders, riderOptions } = useEmployeeLookup();
 const roundRefills = products.filter((product) => product.active && product.kind === "refill" && product.containerType === "round");
 
 const riderId = ref(riders[0]?.id ?? "");

@@ -5,11 +5,17 @@ import { ROUTES } from "@/types";
 definePage({ meta: { title: "Customers" } });
 
 const toast = useToast();
+const { employeeName } = useEmployeeLookup();
+
+function riderLabel(riderId?: string) {
+  return riderId ? employeeName(riderId) : "Open";
+}
 
 const columns = [
   { key: "name", label: "Name" },
   { key: "phone", label: "Phone" },
   { key: "address", label: "Address" },
+  { key: "rider", label: "Rider" },
   { key: "containersHeld", label: "Containers", align: "right" as const },
   { key: "depositOnFile", label: "Deposit", align: "right" as const },
   { key: "creditBalance", label: "Credit balance", align: "right" as const },
@@ -59,6 +65,7 @@ function submitAdd() {
         <UiSearchInput v-model="query" label="Search customers" />
         <UiButton @click="addSheetOpen = true">Add customer</UiButton>
       </template>
+      <template #cell-rider="{ row }">{{ riderLabel(row.riderId) }}</template>
       <template #cell-depositOnFile="{ row }">
         <UiMoneyText :centavos="row.depositOnFile" />
       </template>

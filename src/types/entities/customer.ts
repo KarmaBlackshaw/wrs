@@ -5,6 +5,7 @@ export type TCustomer = {
   name: string;
   address: string;
   phone: string;
+  riderId?: string;
   creditEnabled: boolean;
   creditLimit?: number;
   depositWaived: boolean;
@@ -13,3 +14,5 @@ export type TCustomer = {
   creditBalance: number;
   agingBucket: TAgingBucket;
 };
+
+export type TCustomerScope = "mine" | "open" | "all";
