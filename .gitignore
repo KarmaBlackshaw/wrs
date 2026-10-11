@@ -23,3 +23,6 @@ typed-router.d.ts
 .playwright-mcp
 # Claude local memory pointer (machine-specific Obsidian paths)
 CLAUDE.local.md
+
+# Agent-generated specs/plans
+docs
