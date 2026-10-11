@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { IconClipboardText } from "@/components";
+import { REPORTS } from "@/constants/reports";
 import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Report" } });

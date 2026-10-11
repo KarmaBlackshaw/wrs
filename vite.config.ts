@@ -20,7 +20,7 @@ export default defineConfig({
     // Vue must be placed AFTER VueRouter()
     Vue(),
     AutoImport({
-      dirs: ["./src/composables", "./src/utils", "./src/types/labels", "./src/stores"],
+      dirs: ["./src/composables", "./src/utils/**", "./src/types/labels", "./src/stores"],
       imports: ["pinia", "vue", "vue-router", "@vueuse/core"],
       vueTemplate: true,
       dts: true,

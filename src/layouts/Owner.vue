@@ -23,6 +23,7 @@ import {
   IconWallet,
   IconWalletFill,
 } from "@/components";
+import { REPORTS } from "@/constants/reports";
 import { OWNER_TABS, ROUTES } from "@/types";
 
 const reportTabs = [

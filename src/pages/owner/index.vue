@@ -2,6 +2,7 @@
 import { digestDays } from "@/mocks/digest";
 import { approvals } from "@/mocks/approvals";
 import { shortages } from "@/mocks/shortages";
+import { REPORTS } from "@/constants/reports";
 import { ROUTES } from "@/types";
 import type { TAlert, TAlertTone } from "@/types";
 
