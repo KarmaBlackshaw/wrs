@@ -7,7 +7,7 @@ const emit = defineEmits<{
   submit: [file: File];
 }>();
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 const toast = useToast();
 
 const open = computed({
@@ -41,7 +41,7 @@ function submit() {
 <template>
   <UiBottomSheet v-model:open="open" title="Release with authorization">
     <div class="flex flex-col gap-4">
-      <p class="text-sm text-zinc-500">{{ loan ? employeeName(loan.employeeId) : "" }}</p>
+      <p class="text-sm text-zinc-500">{{ loan ? employeeStore.employeeName(loan.employeeId) : "" }}</p>
       <UiFileInput v-model="releaseFile" label="Signed authorization photo" accept="image/*" capture="environment" />
     </div>
 

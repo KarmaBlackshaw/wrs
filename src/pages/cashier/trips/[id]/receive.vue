@@ -3,7 +3,7 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Receive return" } });
 
-const { productName } = useProductLookup();
+const productStore = useProductStore();
 
 const route = useRoute<"/cashier/trips/[id]/receive">();
 const router = useRouter();
@@ -55,7 +55,7 @@ function submit() {
       </template>
     </UiPageHeader>
 
-    <UiCard v-for="line in summary.perProduct" :key="line.productId" :title="productName(line.productId)">
+    <UiCard v-for="line in summary.perProduct" :key="line.productId" :title="productStore.productName(line.productId)">
       <p class="text-sm text-zinc-500">Loaded {{ line.loaded }}, expected {{ line.expectedFull }} full, {{ line.emptiesCollected }} empty</p>
       <div class="mt-3 grid grid-cols-2 gap-3">
         <UiStepper

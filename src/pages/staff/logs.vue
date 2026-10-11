@@ -5,7 +5,7 @@ import { waterReadings } from "@/mocks/waterQuality";
 
 definePage({ meta: { title: "Readings" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const logColumns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "label", label: "Type" },
@@ -19,7 +19,7 @@ const rows = computed(() => {
     id: `water-${reading.id}`,
     kind: "water" as const,
     label: "Water quality",
-    detail: `TDS ${reading.tds} ppm${reading.ph ? ` · pH ${reading.ph}` : ""} · ${employeeName(reading.by)}`,
+    detail: `TDS ${reading.tds} ppm${reading.ph ? ` · pH ${reading.ph}` : ""} · ${employeeStore.employeeName(reading.by)}`,
     outOfRange: isTdsOutOfRange(reading.tds),
     at: reading.at,
   }));
@@ -28,7 +28,7 @@ const rows = computed(() => {
     id: `meter-${reading.id}`,
     kind: "meter" as const,
     label: "Meter reading",
-    detail: `${reading.liters?.toLocaleString() ?? 0} L · ${employeeName(reading.by)}`,
+    detail: `${reading.liters?.toLocaleString() ?? 0} L · ${employeeStore.employeeName(reading.by)}`,
     outOfRange: false,
     at: reading.at,
   }));

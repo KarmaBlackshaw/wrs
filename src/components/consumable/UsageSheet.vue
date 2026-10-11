@@ -11,7 +11,7 @@ const emit = defineEmits<{
   submit: [consumableId: string, usages: TProductUsage[]];
 }>();
 
-const { productName } = useProductLookup();
+const productStore = useProductStore();
 const toast = useToast();
 
 const open = computed({
@@ -56,7 +56,7 @@ function submitUsage() {
     <div class="flex flex-col gap-4">
       <p class="text-sm text-zinc-500">{{ consumable?.name }}, quantity used per unit sold</p>
       <div v-for="draft in usageDrafts" :key="draft.productId" class="flex items-center justify-between gap-3">
-        <span class="text-base text-zinc-700">{{ productName(draft.productId) }}</span>
+        <span class="text-base text-zinc-700">{{ productStore.productName(draft.productId) }}</span>
         <UiStepper v-model="draft.qtyPerUnit" :min="0" :max="10" />
       </div>
       <p v-if="usageDrafts.length === 0" class="text-sm text-zinc-400">No products use this consumable yet.</p>

@@ -6,7 +6,7 @@ import type { TPayLine, TPayRun, TRowAction } from "@/types";
 
 definePage({ meta: { title: "Payroll run" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const route = useRoute("/owner/people/payroll/[id]");
 const toast = useToast();
@@ -97,7 +97,7 @@ function lineActions(line: TPayLine): TRowAction[] {
     </p>
 
     <UiDataTable :row-actions="lineActions" :columns="columns" :rows="lines" :row-key="(row) => row.employeeId">
-      <template #cell-employee="{ row }">{{ employeeName(row.employeeId) }}</template>
+      <template #cell-employee="{ row }">{{ employeeStore.employeeName(row.employeeId) }}</template>
       <template #cell-days="{ row }">
         Days worked: {{ row.daysWorked }}<template v-if="row.delivered"> · Delivered: {{ row.delivered }}</template>
       </template>

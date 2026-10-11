@@ -4,10 +4,10 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customers" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 function riderLabel(riderId?: string) {
-  return riderId ? employeeName(riderId) : "Open";
+  return riderId ? employeeStore.employeeName(riderId) : "Open";
 }
 
 const columns = [

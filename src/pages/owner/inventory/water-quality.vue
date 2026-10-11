@@ -6,7 +6,7 @@ import type { TLabTest } from "@/types";
 
 definePage({ meta: { title: "Water quality" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const labTests = ref<TLabTest[]>([...labTestsMock]);
 
@@ -57,7 +57,7 @@ function addLabTest(test: Omit<TLabTest, "id">) {
       <UiPanelSection title="Recent readings">
         <UiTable :columns="readingColumns" :rows="recentReadings" :row-key="(row) => row.id">
           <template #cell-at="{ row }">{{ formatDateTime(row.at) }}</template>
-          <template #cell-by="{ row }">{{ employeeName(row.by) }}</template>
+          <template #cell-by="{ row }">{{ employeeStore.employeeName(row.by) }}</template>
           <template #cell-tds="{ row }">
             <span :class="isTdsOutOfRange(row.tds) ? 'font-semibold text-red-700' : ''">{{ row.tds }} ppm</span>
           </template>

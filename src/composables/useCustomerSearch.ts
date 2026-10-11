@@ -1,12 +1,13 @@
 import type { MaybeRefOrGetter } from "vue";
 
-import { customers } from "@/mocks/customers";
 import type { TCustomer } from "@/types";
 
-export function useCustomerSearch(query: MaybeRefOrGetter<string>, source: MaybeRefOrGetter<TCustomer[]> = customers) {
+export function useCustomerSearch(query: MaybeRefOrGetter<string>, source?: MaybeRefOrGetter<TCustomer[]>) {
+  const customerStore = useCustomerStore();
+
   return computed(() => {
     const term = toValue(query).trim().toLowerCase();
-    const list = toValue(source);
+    const list = toValue(source ?? customerStore.customers);
 
     if (!term) {
       return list;

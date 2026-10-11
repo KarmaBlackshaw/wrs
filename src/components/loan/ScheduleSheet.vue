@@ -7,7 +7,7 @@ defineProps<{
   installments: TInstallment[];
 }>();
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const open = computed({
   get: () => loan.value != null,
@@ -23,7 +23,7 @@ const open = computed({
   <UiBottomSheet v-model:open="open" title="Installment schedule">
     <div v-if="loan" class="flex flex-col gap-4">
       <p class="text-sm text-zinc-500">
-        {{ employeeName(loan.employeeId) }}
+        {{ employeeStore.employeeName(loan.employeeId) }}
         <template v-if="loan.ratePct">· {{ loan.ratePct }}% {{ loan.method }} · {{ loan.termMonths }} months</template>
       </p>
       <ul class="flex flex-col gap-1 text-sm text-zinc-600">

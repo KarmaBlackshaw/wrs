@@ -9,7 +9,7 @@ import { OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Cash sessions" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const columns = [
   { key: "cashier", label: "Cashier" },
@@ -49,7 +49,7 @@ const rows = computed(() =>
 <template>
   <div class="flex flex-col gap-4">
     <UiDataTable title="Money" :icon="IconWallet" :tabs="OWNER_TABS.MONEY" :columns="columns" :rows="rows" :row-key="(row) => row.session.id">
-      <template #cell-cashier="{ row }">{{ employeeName(row.session.cashierId) }}</template>
+      <template #cell-cashier="{ row }">{{ employeeStore.employeeName(row.session.cashierId) }}</template>
       <template #cell-opened="{ row }">{{ formatDateTime(row.session.openedAt) }}</template>
       <template #cell-opening="{ row }"><UiMoneyText :centavos="row.session.openingCash" /></template>
       <template #cell-expected="{ row }"><UiMoneyText :centavos="row.expected" tone="muted" /></template>

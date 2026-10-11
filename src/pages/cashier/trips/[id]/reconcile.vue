@@ -4,8 +4,8 @@ import type { TRowAction } from "@/types";
 
 definePage({ meta: { title: "Reconcile trip", roles: ["cashier", "owner"] } });
 
-const { customerName } = useCustomerLookup();
-const { productName } = useProductLookup();
+const customerStore = useCustomerStore();
+const productStore = useProductStore();
 
 const route = useRoute<"/cashier/trips/[id]/reconcile">();
 const router = useRouter();
@@ -31,7 +31,7 @@ const productColumns: { key: string; label: string; align?: "left" | "right" }[]
   { key: "empty", label: "Empty" },
 ];
 
-const productRows = summary.perProduct.map((line) => ({ ...line, product: productName(line.productId) }));
+const productRows = summary.perProduct.map((line) => ({ ...line, product: productStore.productName(line.productId) }));
 
 const deliveryColumns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "customer", label: "Customer" },
@@ -39,10 +39,10 @@ const deliveryColumns: { key: string; label: string; align?: "left" | "right" }[
   { key: "amount", label: "Amount", align: "right" },
 ];
 
-const deliveryRows = summary.deliveries.map((delivery) => ({ ...delivery, customer: customerName(delivery.customerId) }));
+const deliveryRows = summary.deliveries.map((delivery) => ({ ...delivery, customer: customerStore.customerName(delivery.customerId) }));
 
 function openVoid(delivery: (typeof summary.deliveries)[number]) {
-  voidTargetSummary.value = `Delivery to ${customerName(delivery.customerId)}, ${delivery.delivered} delivered, ${formatMoney(delivery.amount)}`;
+  voidTargetSummary.value = `Delivery to ${customerStore.customerName(delivery.customerId)}, ${delivery.delivered} delivered, ${formatMoney(delivery.amount)}`;
   voidSheetOpen.value = true;
 }
 

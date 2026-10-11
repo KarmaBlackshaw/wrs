@@ -7,7 +7,7 @@ const emit = defineEmits<{
   submit: [delta: number];
 }>();
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 const toast = useToast();
 
 const open = computed({
@@ -41,7 +41,7 @@ function submit() {
 <template>
   <UiBottomSheet v-model:open="open" title="Adjust pay line">
     <div class="flex flex-col gap-4">
-      <p class="text-sm text-zinc-500">{{ line ? employeeName(line.employeeId) : "" }}</p>
+      <p class="text-sm text-zinc-500">{{ line ? employeeStore.employeeName(line.employeeId) : "" }}</p>
       <UiField v-model="adjustAmount" label="Adjustment amount (₱, use negative to deduct)" type="number" inputmode="decimal" />
     </div>
 

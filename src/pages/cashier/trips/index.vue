@@ -6,7 +6,7 @@ import type { TRowAction, TTrip } from "@/types";
 
 definePage({ meta: { title: "Trips" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const columns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "riderName", label: "Rider" },
@@ -15,7 +15,7 @@ const columns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "remitted", label: "Remitted", align: "right" },
 ];
 
-const rows = computed(() => trips.map((trip) => ({ ...trip, riderName: employeeName(trip.riderId) })));
+const rows = computed(() => trips.map((trip) => ({ ...trip, riderName: employeeStore.employeeName(trip.riderId) })));
 
 function tripActions({ id, status }: TTrip): TRowAction[] {
   if (status === "open") {

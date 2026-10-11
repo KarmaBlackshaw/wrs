@@ -7,10 +7,10 @@ definePage({ meta: { title: "New load-out" } });
 const router = useRouter();
 const toast = useToast();
 
-const { riders, riderOptions } = useEmployeeLookup();
+const { riders, riderOptions } = storeToRefs(useEmployeeStore());
 const roundRefills = products.filter((product) => product.active && product.kind === "refill" && product.containerType === "round");
 
-const riderId = ref(riders[0]?.id ?? "");
+const riderId = ref(riders.value[0]?.id ?? "");
 const load = ref<Record<string, number>>({});
 
 function qtyFor(productId: string) {

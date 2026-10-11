@@ -6,7 +6,7 @@ import { OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Loans" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const toast = useToast();
 
@@ -23,7 +23,7 @@ const columns = [
 const rows = computed(() =>
   loans.value.map((loan): TLoanRow => ({
     ...loan,
-    employee: employeeName(loan.employeeId),
+    employee: employeeStore.employeeName(loan.employeeId),
     balance: balance(loan),
   }))
 );

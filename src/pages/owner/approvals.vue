@@ -7,8 +7,8 @@ import type { TApproval, TLoan, TRowAction } from "@/types";
 
 definePage({ meta: { title: "Approvals" } });
 
-const { employeeName } = useEmployeeLookup();
-const { findCustomer } = useCustomerLookup();
+const employeeStore = useEmployeeStore();
+const customerStore = useCustomerStore();
 
 const toast = useToast();
 const confirmDialog = useConfirm();
@@ -26,7 +26,7 @@ const columns = [
 ];
 
 function customerLink(refId: string) {
-  return findCustomer(refId) ? ROUTES.OWNER.CUSTOMERS.DETAIL(refId) : undefined;
+  return customerStore.findCustomer(refId) ? ROUTES.OWNER.CUSTOMERS.DETAIL(refId) : undefined;
 }
 
 function approvalActions(approval: TApproval) {
@@ -88,7 +88,7 @@ function approveLoan(approval: TApproval) {
 <template>
   <div class="flex flex-col gap-4">
     <UiDataTable :row-actions="approvalActions" title="Approvals" :icon="IconStamp" :columns="columns" :rows="approvals" :row-key="(row) => row.id">
-      <template #cell-requestedBy="{ row }">{{ employeeName(row.requestedBy) }}</template>
+      <template #cell-requestedBy="{ row }">{{ employeeStore.employeeName(row.requestedBy) }}</template>
       <template #cell-createdAt="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       <template #cell-details="{ row }">
         <div v-if="row.kind === 'loan' && loanFor(row.refId)" class="flex flex-col gap-0.5 text-sm text-zinc-600">

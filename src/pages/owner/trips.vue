@@ -6,7 +6,7 @@ import type { TTripRow } from "@/types";
 
 definePage({ meta: { title: "Trips" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const router = useRouter();
 
@@ -26,7 +26,7 @@ const rows = computed(() =>
       id: trip.id,
       status: trip.status,
       loadedAt: trip.loadedAt,
-      riderName: employeeName(trip.riderId),
+      riderName: employeeStore.employeeName(trip.riderId),
       cashVariance: trip.status === "open" ? null : summary.cashVariance,
       containerVariance: summary.perProduct.length === 0 ? null : summary.fullVariance,
     };

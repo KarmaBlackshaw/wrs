@@ -7,8 +7,8 @@ import type { TOption, TPaymentType, TRowAction, TSaleRow } from "@/types";
 
 definePage({ meta: { title: "Sales" } });
 
-const { customerName } = useCustomerLookup();
-const { productName } = useProductLookup();
+const customerStore = useCustomerStore();
+const productStore = useProductStore();
 
 const columns = [
   { key: "createdAt", label: "Date" },
@@ -32,7 +32,7 @@ const sourceOptions: TOption<typeof sourceFilter.value>[] = [
 ];
 
 function saleCustomerName(customerId?: string) {
-  return customerId ? customerName(customerId) : "Walk-in";
+  return customerId ? customerStore.customerName(customerId) : "Walk-in";
 }
 
 const allRows = computed(() => {
@@ -41,7 +41,7 @@ const allRows = computed(() => {
     source: "walk-in",
     createdAt: sale.createdAt,
     customerName: saleCustomerName(sale.customerId),
-    items: sale.lines.map((line) => `${line.qty}× ${productName(line.productId)}`).join(", "),
+    items: sale.lines.map((line) => `${line.qty}× ${productStore.productName(line.productId)}`).join(", "),
     amount: sale.amount,
     paymentType: sale.paymentType,
   }));
@@ -51,7 +51,7 @@ const allRows = computed(() => {
     source: "delivery",
     createdAt: delivery.createdAt,
     customerName: saleCustomerName(delivery.customerId),
-    items: `${delivery.delivered}× ${productName(delivery.productId)}`,
+    items: `${delivery.delivered}× ${productStore.productName(delivery.productId)}`,
     amount: delivery.amount,
     paymentType: delivery.paymentType,
   }));

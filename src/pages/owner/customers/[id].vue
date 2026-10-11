@@ -4,15 +4,15 @@ import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customer" } });
 
-const { employeeName } = useEmployeeLookup();
-const { findCustomer } = useCustomerLookup();
+const employeeStore = useEmployeeStore();
+const customerStore = useCustomerStore();
 
 const route = useRoute("/owner/customers/[id]");
 const toast = useToast();
 const confirmDialog = useConfirm();
 
-const customer = computed(() => findCustomer(route.params.id));
-const riderName = computed(() => (customer.value?.riderId ? employeeName(customer.value.riderId) : "Open"));
+const customer = computed(() => customerStore.findCustomer(route.params.id));
+const riderName = computed(() => (customer.value?.riderId ? employeeStore.employeeName(customer.value.riderId) : "Open"));
 const headerSubtitle = computed(() => (customer.value ? `${customer.value.phone} · ${customer.value.address} · ${riderName.value}` : ""));
 
 const historyColumns = [
@@ -27,7 +27,7 @@ const historyColumns = [
 function riderNameForTrip(tripId: string) {
   const trip = trips.find((candidate) => candidate.id === tripId);
 
-  return trip ? employeeName(trip.riderId) : "Rider";
+  return trip ? employeeStore.employeeName(trip.riderId) : "Rider";
 }
 
 const history = computed(() =>

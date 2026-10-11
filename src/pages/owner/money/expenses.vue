@@ -8,7 +8,7 @@ import type { TExpense } from "@/types";
 
 definePage({ meta: { title: "Expenses" } });
 
-const { employeeName } = useEmployeeLookup();
+const employeeStore = useEmployeeStore();
 
 const expenses = ref<TExpense[]>([...expensesMock]);
 
@@ -72,7 +72,7 @@ function addExpense(expense: Omit<TExpense, "id">) {
         <UiTable :columns="rowColumns" :rows="group.rows" :row-key="(row) => row.id">
           <template #cell-date="{ row }">{{ formatDate(row.date) }}</template>
           <template #cell-paidBy="{ row }">
-            {{ employeeName(row.paidBy) }} · {{ startCase(row.source) }}
+            {{ employeeStore.employeeName(row.paidBy) }} · {{ startCase(row.source) }}
             <template v-if="row.consumableId">· restocked {{ row.qty }} pc</template>
           </template>
           <template #cell-amount="{ row }"><UiMoneyText :centavos="row.amount" /></template>

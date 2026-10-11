@@ -7,14 +7,14 @@ const { customer } = defineProps<{
   customer: TCustomer;
 }>();
 
-const { riderOptions } = useEmployeeLookup();
+const { riderOptions } = storeToRefs(useEmployeeStore());
 const toast = useToast();
 
 const nameDraft = ref("");
 const phoneDraft = ref("");
 const addressDraft = ref("");
 const riderDraft = ref("");
-const riderDraftOptions = [{ value: "", label: "Open" }, ...riderOptions];
+const riderDraftOptions = computed(() => [{ value: "", label: "Open" }, ...riderOptions.value]);
 const canSaveCustomer = computed(() => nameDraft.value.trim().length > 0 && phoneDraft.value.trim().length > 0);
 
 watch(open, (isOpen) => {

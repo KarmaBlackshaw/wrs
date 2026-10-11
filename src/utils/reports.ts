@@ -17,9 +17,6 @@ import { waterReadings } from "@/mocks/waterQuality";
 import { walkInSales } from "@/mocks/walkInSales";
 import type { TLoan, TReportSummary, TReportTable } from "@/types";
 
-const { employeeName } = useEmployeeLookup();
-const { customerName } = useCustomerLookup();
-
 export const REPORTS: { slug: string; title: string; description: string; summary: () => TReportSummary }[] = [
   {
     slug: "rider-reconciliation",
@@ -165,6 +162,9 @@ function maintenanceStates() {
 }
 
 export function buildReportTable(slug: string): TReportTable {
+  const employeeStore = useEmployeeStore();
+  const customerStore = useCustomerStore();
+
   switch (slug) {
     case "rider-reconciliation":
       return {
@@ -183,7 +183,7 @@ export function buildReportTable(slug: string): TReportTable {
           const summary = tripSummary(trip.id);
 
           return {
-            rider: employeeName(trip.riderId),
+            rider: employeeStore.employeeName(trip.riderId),
             status: TRIP_STATUS_LABEL[trip.status],
             loaded: summary.loaded,
             delivered: summary.delivered,
@@ -207,7 +207,7 @@ export function buildReportTable(slug: string): TReportTable {
           { key: "approved", label: "Approved for deduction" },
         ],
         rows: shortages.map((shortage) => ({
-          employee: employeeName(shortage.employeeId),
+          employee: employeeStore.employeeName(shortage.employeeId),
           source: startCase(shortage.source),
           cash: formatMoney(shortage.cash),
           containers: shortage.containers,
@@ -225,7 +225,7 @@ export function buildReportTable(slug: string): TReportTable {
           { key: "variance", label: "Variance", align: "right" },
         ],
         rows: drawerSessions.map((session) => ({
-          cashier: employeeName(session.cashierId),
+          cashier: employeeStore.employeeName(session.cashierId),
           opened: formatDate(session.openedAt),
           opening: formatMoney(session.openingCash),
           counted: session.countedCash !== undefined ? formatMoney(session.countedCash) : "Open",
@@ -238,7 +238,7 @@ export function buildReportTable(slug: string): TReportTable {
       const deliveryRows = deliveries.map((delivery) => ({
         date: formatDateTime(delivery.createdAt),
         type: "Delivery",
-        customer: customerName(delivery.customerId),
+        customer: customerStore.customerName(delivery.customerId),
         amount: formatMoney(delivery.amount),
         payment: PAYMENT_LABEL[delivery.paymentType],
         _date: delivery.createdAt,
@@ -247,7 +247,7 @@ export function buildReportTable(slug: string): TReportTable {
       const walkInRows = walkInSales.map((sale) => ({
         date: formatDateTime(sale.createdAt),
         type: "Walk-in",
-        customer: sale.customerId ? customerName(sale.customerId) : "Walk-in customer",
+        customer: sale.customerId ? customerStore.customerName(sale.customerId) : "Walk-in customer",
         amount: formatMoney(sale.amount),
         payment: PAYMENT_LABEL[sale.paymentType],
         _date: sale.createdAt,
@@ -355,7 +355,7 @@ export function buildReportTable(slug: string): TReportTable {
           date: formatDateTime(reading.at),
           tds: reading.tds,
           ph: reading.ph ?? "-",
-          by: employeeName(reading.by),
+          by: employeeStore.employeeName(reading.by),
           _date: reading.at,
         })),
       };
@@ -373,7 +373,7 @@ export function buildReportTable(slug: string): TReportTable {
           date: formatDate(expense.date),
           category: expense.category,
           amount: formatMoney(expense.amount),
-          paidBy: employeeName(expense.paidBy),
+          paidBy: employeeStore.employeeName(expense.paidBy),
           source: startCase(expense.source),
           _date: expense.date,
         })),
@@ -394,7 +394,7 @@ export function buildReportTable(slug: string): TReportTable {
 
           return {
             period: run ? formatPeriod(run.periodStart, run.periodEnd) : line.runId,
-            employee: employeeName(line.employeeId),
+            employee: employeeStore.employeeName(line.employeeId),
             base: formatMoney(line.base),
             incentive: formatMoney(line.incentive),
             deductions: formatMoney(totalDeductions(line)),
@@ -414,7 +414,7 @@ export function buildReportTable(slug: string): TReportTable {
           { key: "balance", label: "Balance", align: "right" },
         ],
         rows: loans.map((loan) => ({
-          employee: employeeName(loan.employeeId),
+          employee: employeeStore.employeeName(loan.employeeId),
           type: startCase(loan.type),
           principal: formatMoney(loan.principal),
           status: LOAN_STATUS_LABEL[loan.status],
