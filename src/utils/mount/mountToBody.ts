@@ -1,5 +1,4 @@
-import { render } from "vue";
-import type { AppContext, Component } from "vue";
+import { render, type AppContext, type Component } from "vue";
 
 export function mountToBody(component: Component, props: Record<string, unknown>, appContext?: AppContext) {
   const container = document.createElement("div");

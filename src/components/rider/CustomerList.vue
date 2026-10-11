@@ -3,8 +3,7 @@ import type { RouteLocationRaw } from "vue-router";
 
 import { IconUsers } from "@/components";
 import { customers } from "@/mocks/customers";
-import { RIDER_TABS } from "@/types";
-import type { TCustomer, TCustomerScope, TRowAction } from "@/types";
+import { RIDER_TABS, type TCustomer, type TCustomerScope, type TRowAction } from "@/types";
 
 const { getTo, scope = "mine" } = defineProps<{
   getTo: (customer: TCustomer) => RouteLocationRaw;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ROLE_LABEL } from "@/types";
-import type { TEmployee, TRole } from "@/types";
+import { ROLE_LABEL, type TEmployee, type TRole } from "@/types";
 
 const open = defineModel<boolean>("open", { default: false });
 

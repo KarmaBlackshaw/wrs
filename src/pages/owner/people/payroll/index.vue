@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconIdentificationBadge } from "@/components";
 import { payRuns as payRunsMock } from "@/mocks/payroll";
-import { ROUTES, OWNER_TABS } from "@/types";
-import type { TPayRun } from "@/types";
+import { ROUTES, OWNER_TABS, type TPayRun } from "@/types";
 
 definePage({ meta: { title: "Payroll" } });
 

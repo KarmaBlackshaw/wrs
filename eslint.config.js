@@ -51,6 +51,7 @@ const rules = {
     },
   ],
   "vue/attribute-hyphenation": ["error", "always"],
+  "import-x/no-duplicates": ["error", { "prefer-inline": true }],
   "import-x/order": [
     "error",
     {

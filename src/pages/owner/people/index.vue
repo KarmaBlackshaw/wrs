@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconIdentificationBadge } from "@/components";
 import { employees as employeesMock } from "@/mocks/employees";
-import { ROLE_LABEL, ROUTES, OWNER_TABS } from "@/types";
-import type { TEmployee } from "@/types";
+import { ROLE_LABEL, ROUTES, OWNER_TABS, type TEmployee } from "@/types";
 
 definePage({ meta: { title: "Employees" } });
 

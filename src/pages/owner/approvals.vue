@@ -2,8 +2,7 @@
 import { IconCheck, IconStamp, IconUserCircle, IconX } from "@/components";
 import { approvals } from "@/mocks/approvals";
 import { loans } from "@/mocks/loans";
-import { ROUTES } from "@/types";
-import type { TApproval, TLoan, TRowAction } from "@/types";
+import { ROUTES, type TApproval, type TLoan, type TRowAction } from "@/types";
 
 definePage({ meta: { title: "Approvals" } });
 

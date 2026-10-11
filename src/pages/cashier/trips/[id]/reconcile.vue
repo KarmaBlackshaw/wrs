@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ROUTES } from "@/types";
-import type { TRowAction } from "@/types";
+import { ROUTES, type TRowAction } from "@/types";
 
 definePage({ meta: { title: "Reconcile trip", roles: ["cashier", "owner"] } });
 

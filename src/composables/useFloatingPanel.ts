@@ -1,5 +1,4 @@
-import { autoUpdate, flip, offset, shift, size, useFloating } from "@floating-ui/vue";
-import type { Placement } from "@floating-ui/vue";
+import { autoUpdate, flip, offset, shift, size, useFloating, type Placement } from "@floating-ui/vue";
 import type { Ref } from "vue";
 
 const openPanels: { close: () => void; floating: Readonly<Ref<HTMLElement | null>> }[] = [];

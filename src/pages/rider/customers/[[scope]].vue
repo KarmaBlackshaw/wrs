@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ROUTES } from "@/types";
-import type { TCustomer, TCustomerScope } from "@/types";
+import { ROUTES, type TCustomer, type TCustomerScope } from "@/types";
 
 definePage({ meta: { title: "Customers" } });
 

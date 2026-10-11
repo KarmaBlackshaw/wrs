@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconPackage } from "@/components";
 import { products as productsMock, prices as pricesMock } from "@/mocks/products";
-import type { TPrice, TProduct, TRowAction } from "@/types";
-import { OWNER_TABS } from "@/types";
+import { type TPrice, type TProduct, type TRowAction, OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Products & prices" } });
 

@@ -3,8 +3,7 @@ import startCase from "lodash/startCase";
 
 import { IconWallet } from "@/components";
 import { expenses as expensesMock } from "@/mocks/expenses";
-import { OWNER_TABS } from "@/types";
-import type { TExpense } from "@/types";
+import { OWNER_TABS, type TExpense } from "@/types";
 
 definePage({ meta: { title: "Expenses" } });
 

@@ -3,8 +3,7 @@ import startCase from "lodash/startCase";
 
 import { IconGear } from "@/components";
 import { settings as settingsMock } from "@/mocks/settings";
-import { OWNER_TABS, ROUTES } from "@/types";
-import type { TRowAction, TSetting } from "@/types";
+import { OWNER_TABS, ROUTES, type TRowAction, type TSetting } from "@/types";
 
 definePage({ meta: { title: "Settings" } });
 

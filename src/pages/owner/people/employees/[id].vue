@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { employees, payPlans as payPlansMock } from "@/mocks/employees";
-import { ROLE_LABEL, ROUTES } from "@/types";
-import type { TPayPlan } from "@/types";
+import { ROLE_LABEL, ROUTES, type TPayPlan } from "@/types";
 
 definePage({ meta: { title: "Employee" } });
 

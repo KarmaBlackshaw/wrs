@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconUsers } from "@/components";
 import { customers } from "@/mocks/customers";
-import { ROUTES } from "@/types";
-import type { TCustomer } from "@/types";
+import { ROUTES, type TCustomer } from "@/types";
 
 definePage({ meta: { title: "Today's trip" } });
 

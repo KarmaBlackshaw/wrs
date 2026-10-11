@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ROUTES } from "@/types";
-import type { TCustomer, TPaymentType } from "@/types";
+import { ROUTES, type TCustomer, type TPaymentType } from "@/types";
 import { containerTypes } from "@/mocks/containerTypes";
 import { customers } from "@/mocks/customers";
 import { products } from "@/mocks/products";

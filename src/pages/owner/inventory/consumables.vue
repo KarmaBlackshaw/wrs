@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconPackage } from "@/components";
 import { consumables as consumablesMock, productUsages as productUsagesMock, stockEntries as stockEntriesMock } from "@/mocks/consumables";
-import type { TConsumable, TProductUsage, TRowAction, TStockEntry } from "@/types";
-import { OWNER_TABS } from "@/types";
+import { type TConsumable, type TProductUsage, type TRowAction, type TStockEntry, OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Consumables" } });
 

@@ -4,8 +4,7 @@ import { drawerSessions } from "@/mocks/drawerSessions";
 import { expenses } from "@/mocks/expenses";
 import { payments } from "@/mocks/payments";
 import { walkInSales } from "@/mocks/walkInSales";
-import type { TDrawerSession } from "@/types";
-import { OWNER_TABS } from "@/types";
+import { type TDrawerSession, OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Cash sessions" } });
 

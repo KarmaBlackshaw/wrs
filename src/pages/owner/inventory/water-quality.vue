@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconPackage } from "@/components";
 import { labTests as labTestsMock, waterReadings } from "@/mocks/waterQuality";
-import { OWNER_TABS } from "@/types";
-import type { TLabTest } from "@/types";
+import { OWNER_TABS, type TLabTest } from "@/types";
 
 definePage({ meta: { title: "Water quality" } });
 

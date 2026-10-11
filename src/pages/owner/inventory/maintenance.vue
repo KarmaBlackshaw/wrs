@@ -3,8 +3,7 @@ import { IconPackage } from "@/components";
 import { consumables } from "@/mocks/consumables";
 import { maintenanceLogs as maintenanceLogsMock } from "@/mocks/maintenance";
 import { meterReadings } from "@/mocks/meterReadings";
-import type { TConsumable, TMaintenanceLog, TRowAction } from "@/types";
-import { OWNER_TABS } from "@/types";
+import { type TConsumable, type TMaintenanceLog, type TRowAction, OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Maintenance" } });
 

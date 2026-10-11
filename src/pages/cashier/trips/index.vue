@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconTruck } from "@/components";
 import { trips } from "@/mocks/trips";
-import { ROUTES } from "@/types";
-import type { TRowAction, TTrip } from "@/types";
+import { ROUTES, type TRowAction, type TTrip } from "@/types";
 
 definePage({ meta: { title: "Trips" } });
 

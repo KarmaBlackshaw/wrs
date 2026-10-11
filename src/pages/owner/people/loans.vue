@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconIdentificationBadge } from "@/components";
 import { installments, loans as loansMock } from "@/mocks/loans";
-import type { TLoan, TLoanRow, TRowAction } from "@/types";
-import { OWNER_TABS } from "@/types";
+import { type TLoan, type TLoanRow, type TRowAction, OWNER_TABS } from "@/types";
 
 definePage({ meta: { title: "Loans" } });
 

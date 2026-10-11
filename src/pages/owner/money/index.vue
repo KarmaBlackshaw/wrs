@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { IconWallet } from "@/components";
 import { customers } from "@/mocks/customers";
-import { OWNER_TABS, ROUTES } from "@/types";
-import type { TAgingBucket } from "@/types";
+import { OWNER_TABS, ROUTES, type TAgingBucket } from "@/types";
 
 definePage({ meta: { title: "Credit aging" } });
 
