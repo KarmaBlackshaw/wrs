@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { roleSchema } from "./auth.ts";
 import { idSchema, isoDateSchema, isoDateTimeSchema, moneySchema, pageQuerySchema } from "./common.ts";
+import { DEDUCTION_CAP_PCT, PASSWORD_MIN_LENGTH } from "./rules/employeeLimits.ts";
 
 export const payFrequencySchema = z.enum(["daily", "weekly", "semi_monthly", "monthly"]);
 export const rateBasisSchema = z.enum(["per_day", "per_period"]);
@@ -35,7 +36,7 @@ export const employeeCreateSchema = z.object({
   lastName: z.string().trim().min(1),
   phone: z.string().trim().optional(),
   username: z.string().trim().min(1),
-  password: z.string().min(8),
+  password: z.string().min(PASSWORD_MIN_LENGTH),
   roles: z.array(roleSchema).min(1),
   hireDate: isoDateSchema,
 });
@@ -49,7 +50,7 @@ export const employeeUpdateSchema = z.object({
   hireDate: isoDateSchema.optional(),
 });
 
-export const employeePasswordBodySchema = z.object({ password: z.string().min(8) });
+export const employeePasswordBodySchema = z.object({ password: z.string().min(PASSWORD_MIN_LENGTH) });
 
 const restWeekdaySchema = z.number().int().min(0).max(6);
 
@@ -78,7 +79,7 @@ export const payPlanCreateSchema = z.object({
   baseRate: moneySchema.min(0),
   quota: z.number().int().min(0).optional(),
   incentivePerContainer: moneySchema.min(0).optional(),
-  deductionCapPct: z.number().min(0).max(100).optional(),
+  deductionCapPct: z.number().min(DEDUCTION_CAP_PCT.min).max(DEDUCTION_CAP_PCT.max).optional(),
   restWeekday: restWeekdaySchema.optional(),
   ptoDaysOverride: z.number().int().min(0).optional(),
   maxLoanAmountOverride: moneySchema.min(0).optional(),

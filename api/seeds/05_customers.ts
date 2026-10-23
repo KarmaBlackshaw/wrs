@@ -1,84 +1,104 @@
 import type { Knex } from "knex";
-import { EMPLOYEE, id } from "./ids/index.ts";
+import { EMPLOYEE, ID_GROUP, id } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
   const created_at = new Date();
 
-  await knex("customer_ownerships").del();
-  await knex("customers").del();
-
   const customers = [
     {
-      first_name: "Aling Nena",
-      last_name: "Store",
-      phone: "09181000001",
-      address: "Purok 3, near the basketball court, Brgy. San Isidro",
+      first_name: "Aling Rosa",
+      last_name: "Hernandez",
+      address: "12 Sampaguita St., Brgy. San Isidro, Taytay, Rizal",
+      phone: "09170000001",
       rider_id: EMPLOYEE.rider1,
-      delivery_interval_days: 2,
+    },
+    {
+      first_name: "Mang Tomas",
+      last_name: "Villaruel",
+      address: "45 Mabini St., Brgy. Poblacion, Cainta, Rizal",
+      phone: "09170000002",
+      rider_id: EMPLOYEE.rider2,
+      credit_enabled: true,
+      credit_limit: 200000,
+    },
+    {
+      first_name: "Nenita",
+      last_name: "Ocampo",
+      address: "78 Ilang-Ilang St., Brgy. Dolores, Taytay, Rizal",
+      phone: "09170000003",
+      rider_id: EMPLOYEE.multi,
+      deposit_waived: true,
+    },
+    {
+      first_name: "Renato",
+      last_name: "Gonzales",
+      address: "23 Kalachuchi St., Brgy. Muzon, San Mateo, Rizal",
+      phone: "09170000004",
+      rider_id: EMPLOYEE.owner,
+      credit_enabled: true,
+      credit_limit: 150000,
+    },
+    { first_name: "Estrella", last_name: "Manalo", address: "9 Rizal Ave., Brgy. San Juan, Taytay, Rizal", phone: "09170000005", rider_id: EMPLOYEE.rider1 },
+    {
+      first_name: "Bienvenido",
+      last_name: "Torres",
+      address: "56 Bonifacio St., Brgy. Santa Ana, Taytay, Rizal",
+      phone: "09170000006",
+      rider_id: EMPLOYEE.rider2,
       credit_enabled: true,
       credit_limit: 100000,
     },
+    { first_name: "Corazon", last_name: "Ferrer", address: "3 Molave St., Brgy. Dolores, Taytay, Rizal", phone: "09170000007", rider_id: EMPLOYEE.multi },
     {
-      first_name: "Antonio",
-      last_name: "Villanueva",
-      phone: "09181000002",
-      address: "Blk 5 Lot 12, Villa Verde Subd., green gate",
-      rider_id: EMPLOYEE.rider1,
-      delivery_interval_days: 7,
-    },
-    {
-      first_name: "Liza",
-      last_name: "Cruz",
-      phone: "09181000003",
-      address: "123 Rizal St., beside Mercury Drug",
-      rider_id: EMPLOYEE.rider2,
-      delivery_interval_days: 5,
+      first_name: "Danilo",
+      last_name: "Aquino",
+      address: "88 Narra St., Brgy. Muzon, San Mateo, Rizal",
+      phone: "09170000008",
+      rider_id: EMPLOYEE.owner,
       credit_enabled: true,
-      credit_limit: 50000,
-    },
-    {
-      first_name: "St. Jude",
-      last_name: "Clinic",
-      phone: "09181000004",
-      address: "2F Dimasalang Bldg., Mabini Ave.",
-      rider_id: EMPLOYEE.rider2,
-      delivery_interval_days: 3,
-      credit_enabled: true,
-      credit_limit: 300000,
+      credit_limit: 250000,
       deposit_waived: true,
     },
-    { first_name: "Joy", last_name: "Ramos", phone: "09181000005", address: "Public market, stall 14" },
+    { first_name: "Perlita", last_name: "Magsino", address: "14 Acacia St., Brgy. Poblacion, Cainta, Rizal", phone: "09170000009", rider_id: EMPLOYEE.rider1 },
     {
-      first_name: "Carmen",
-      last_name: "Lopez",
-      phone: "09181000006",
-      address: "Sitio Malinis, last house before the chapel",
-      rider_id: EMPLOYEE.rider1,
-      status: "pending",
-      delivery_interval_days: 7,
+      first_name: "Armando",
+      last_name: "Salvador",
+      address: "31 Yakal St., Brgy. San Isidro, Taytay, Rizal",
+      phone: "09170000010",
+      rider_id: EMPLOYEE.rider2,
+      credit_enabled: true,
+      credit_limit: 120000,
     },
+    { first_name: "Josefina", last_name: "Ramos", address: "67 Katmon St., Brgy. Santa Ana, Taytay, Rizal", phone: "09170000011", rider_id: EMPLOYEE.multi },
     {
-      first_name: "Brgy. Hall",
-      last_name: "San Isidro",
-      phone: "09181000007",
-      address: "Brgy. San Isidro Hall, Poblacion",
+      first_name: "Eduardo",
+      last_name: "Mercado",
+      address: "5 Waling-Waling St., Brgy. Dolores, Taytay, Rizal",
+      phone: "09170000012",
+      credit_enabled: true,
+      credit_limit: 100000,
+    },
+    { first_name: "Marilou", last_name: "Espino", address: "21 Camia St., Brgy. Muzon, San Mateo, Rizal", phone: "09170000013", deposit_waived: true },
+    {
+      first_name: "Rogelio",
+      last_name: "Pascual",
+      address: "40 Anahaw St., Brgy. San Juan, Taytay, Rizal",
+      phone: "09170000014",
       credit_enabled: true,
       credit_limit: 200000,
-      deposit_waived: true,
     },
-    { first_name: "Rosa", last_name: "Dela Rosa", phone: "09181000008", address: "45 Bonifacio St., blue 3-storey", status: "pending" },
-  ].map((c, i) => ({ id: id(3, i + 1), ...c, created_at }));
+    { first_name: "Teresita", last_name: "Navarro", address: "17 Adelfa St., Brgy. Poblacion, Cainta, Rizal", phone: "09170000015" },
+  ].map((customer, i) => ({ id: id(ID_GROUP.customer, i + 1), rider_id: null, ...customer, created_at }));
 
   await knex("customers").insert(customers);
 
-  // ponytail: one `created` row per customer; seeds skip claim/release history.
   await knex("customer_ownerships").insert(
-    customers.map((c, i) => ({
-      id: id(14, i + 1),
-      customer_id: c.id,
-      rider_id: c.rider_id ?? null,
+    customers.map((customer, i) => ({
+      id: id(ID_GROUP.customerOwnership, i + 1),
+      customer_id: customer.id,
+      rider_id: customer.rider_id,
       event: "created",
-      by_employee_id: c.rider_id ?? (c.status === "pending" ? EMPLOYEE.cashier : EMPLOYEE.owner),
+      by_employee_id: EMPLOYEE.owner,
       created_at,
     }))
   );

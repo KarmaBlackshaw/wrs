@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { MONEY_MAX, MONEY_MIN } from "./rules/moneyLimits.ts";
 
 export const idSchema = z.uuid();
-export const moneySchema = z.number().int();
+export const moneySchema = z.number().int().min(MONEY_MIN).max(MONEY_MAX);
 export const isoDateSchema = z.iso.date();
 export const isoDateTimeSchema = z.iso.datetime();
 
@@ -43,6 +44,7 @@ export const errorCodeSchema = z.enum([
   "payroll.overlap",
   "payroll.finalized",
   "employee.duplicate_username",
+  "employee.last_owner",
   "expense_category.duplicate_name",
   "conflict",
   "shortage.not_in_run",

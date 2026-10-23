@@ -22,7 +22,7 @@ export type TRowAction = {
   icon?: Component;
 };
 
-export type TOption<T extends string = string> = {
+export type TOption<T extends string | number = string> = {
   value: T;
   label: string;
 };

@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import type { TRowAction } from "@/types";
 
-const {
-  actions,
-  collapsed,
-  label = "Actions",
-} = defineProps<{
+const { actions, collapsed, label } = defineProps<{
   actions: TRowAction[];
   collapsed?: boolean;
   label?: string;
 }>();
+
+const triggerLabel = computed(() => (label ? `Actions for ${label}` : "Actions"));
+
+function actionLabel(action: TRowAction) {
+  return label ? `${action.label} ${label}` : undefined;
+}
 
 const router = useRouter();
 
@@ -54,7 +56,15 @@ function select(action: TRowAction) {
 <template>
   <div class="flex justify-end gap-2">
     <template v-if="!collapsed">
-      <UiButton v-for="action in actions" :key="action.label" size="sm" :variant="action.variant ?? 'secondary'" :to="action.to" @click="action.onSelect?.()">
+      <UiButton
+        v-for="action in actions"
+        :key="action.label"
+        size="sm"
+        :variant="action.variant ?? 'secondary'"
+        :to="action.to"
+        :aria-label="actionLabel(action)"
+        @click="action.onSelect?.()"
+      >
         {{ action.label }}
       </UiButton>
     </template>
@@ -62,11 +72,11 @@ function select(action: TRowAction) {
       <button
         ref="trigger"
         type="button"
-        :aria-label="label"
+        :aria-label="triggerLabel"
         aria-haspopup="menu"
         :aria-expanded="open"
         :aria-controls="id"
-        class="flex size-8 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-brand-600"
+        class="flex size-11 items-center justify-center rounded-lg text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-brand-600"
         :class="open ? 'bg-zinc-100 text-zinc-900' : ''"
         @click="open ? (open = false) : show()"
         @keydown.down.prevent="show()"
@@ -79,7 +89,7 @@ function select(action: TRowAction) {
         :id="id"
         ref="panel"
         role="menu"
-        :aria-label="label"
+        :aria-label="triggerLabel"
         class="inset-auto m-0 min-w-44 flex-col overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg open:flex"
         :style="floatingStyles"
         @keydown.down.prevent="move(1)"
@@ -95,7 +105,7 @@ function select(action: TRowAction) {
           type="button"
           role="menuitem"
           tabindex="-1"
-          class="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm focus-visible:outline-none"
+          class="flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm focus-visible:outline-none"
           :class="
             action.variant === 'danger' ? 'text-red-600 hover:bg-red-50 focus-visible:bg-red-50' : 'text-zinc-700 hover:bg-zinc-100 focus-visible:bg-zinc-100'
           "

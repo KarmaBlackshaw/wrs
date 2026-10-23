@@ -1,5 +1,6 @@
 import type { TPage } from "@wrs/contract/common";
 import type {
+  TCreditAging,
   TCustomer,
   TCustomerCreate,
   TCustomerCreditBody,
@@ -58,4 +59,8 @@ export function previewDistribution(body: TDistributePreviewBody) {
 
 export function commitDistribution(body: TDistributeCommit) {
   return http.post<void>("/customers/distribute", body);
+}
+
+export function getCreditAging(signal?: AbortSignal) {
+  return http.get<TCreditAging>("/customers/aging", { signal });
 }

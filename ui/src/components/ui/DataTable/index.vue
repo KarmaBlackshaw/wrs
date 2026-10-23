@@ -1,7 +1,7 @@
 <script setup lang="ts" generic="T extends Record<string, unknown>">
 import type { TRowAction, TTab } from "@/types";
 
-const { columns, rows, rowActions, total, isLoading, error } = defineProps<{
+const { columns, rows, rowActions, total, isLoading, error, bare, rowLabel } = defineProps<{
   columns: { key: string; label: string; align?: "left" | "right" }[];
   rows: T[];
   rowKey: (row: T) => string | number;
@@ -14,6 +14,8 @@ const { columns, rows, rowActions, total, isLoading, error } = defineProps<{
   total?: number;
   isLoading?: boolean;
   error?: string;
+  bare?: boolean;
+  rowLabel?: (row: T) => string;
 }>();
 
 const emit = defineEmits<{
@@ -27,7 +29,7 @@ const collapsed = computed(() => rows.some((row) => (rowActions?.(row).length ??
 </script>
 
 <template>
-  <UiPanel :title="title" :icon="icon" :count="count" :tabs="tabs">
+  <UiPanel :bare="bare" :title="title" :icon="icon" :count="count" :tabs="tabs">
     <template v-if="$slots.actions" #actions>
       <slot name="actions"></slot>
     </template>
@@ -57,7 +59,7 @@ const collapsed = computed(() => rows.some((row) => (rowActions?.(row).length ??
               <slot :name="`cell-${column.key}`" :row="row">{{ row[column.key] }}</slot>
             </template>
             <template v-if="rowActions" #cell-actions="{ row }">
-              <UiDataTableRowActions :actions="rowActions(row)" :collapsed="collapsed" />
+              <UiDataTableRowActions :actions="rowActions(row)" :collapsed="collapsed" :label="rowLabel?.(row)" />
             </template>
             <template #empty>
               <slot name="empty"></slot>

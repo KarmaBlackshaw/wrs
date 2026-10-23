@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { containerTypeCodeSchema } from "./container.ts";
 import { idSchema, isoDateSchema, isoDateTimeSchema, moneySchema, pageQuerySchema } from "./common.ts";
+import { DELIVERY_INTERVAL_DAYS } from "./rules/customerLimits.ts";
 
 export const customerStatusSchema = z.enum(["pending", "active"]);
 export const agingBucketSchema = z.enum(["current", "7", "15", "30+"]);
@@ -35,6 +36,11 @@ export const customerSchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 
+export const creditAgingSchema = z.object({
+  buckets: z.array(z.object({ bucket: agingBucketSchema, total: moneySchema, customers: z.array(customerSchema) })),
+  grandTotal: moneySchema,
+});
+
 export const customerListQuerySchema = pageQuerySchema.extend({
   scope: z.enum(["mine", "all"]).optional(),
   show: z.enum(["all", "open", "pending", "overdue"]).optional(),
@@ -43,7 +49,7 @@ export const customerListQuerySchema = pageQuerySchema.extend({
   aging: agingBucketSchema.optional(),
 });
 
-const deliveryIntervalDaysSchema = z.number().int().min(1).max(365);
+const deliveryIntervalDaysSchema = z.number().int().min(DELIVERY_INTERVAL_DAYS.min).max(DELIVERY_INTERVAL_DAYS.max);
 
 export const customerCreateSchema = z.object({
   id: idSchema.optional(),
@@ -122,6 +128,7 @@ export type TDueStatus = z.infer<typeof dueStatusSchema>;
 export type TOwnershipEvent = z.infer<typeof ownershipEventSchema>;
 export type TWaiverRequestStatus = z.infer<typeof waiverRequestStatusSchema>;
 export type TCustomer = z.infer<typeof customerSchema>;
+export type TCreditAging = z.infer<typeof creditAgingSchema>;
 export type TCustomerListQuery = z.infer<typeof customerListQuerySchema>;
 export type TCustomerCreate = z.infer<typeof customerCreateSchema>;
 export type TCustomerUpdate = z.infer<typeof customerUpdateSchema>;

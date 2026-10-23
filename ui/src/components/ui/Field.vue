@@ -22,6 +22,12 @@ const fieldId = computed(() => id ?? generatedId);
 const hintId = computed(() => `${fieldId.value}-hint`);
 const errorId = computed(() => `${fieldId.value}-error`);
 
+function onInput(event: Event) {
+  if (event.target instanceof HTMLInputElement) {
+    model.value = event.target.value;
+  }
+}
+
 const describedBy = computed(() => {
   if (error) {
     return errorId.value;
@@ -44,13 +50,14 @@ const describedBy = computed(() => {
       </span>
       <input
         :id="fieldId"
-        v-model="model"
+        :value="model"
         :type="type"
         :aria-describedby="describedBy"
         :aria-invalid="!!error"
         class="h-10 w-full rounded-lg border border-zinc-300 bg-white px-3 text-sm text-zinc-900 shadow-xs transition-shadow placeholder:text-zinc-500 focus-visible:border-brand-600 focus-visible:ring-4 focus-visible:ring-brand-600/15 focus-visible:outline-none"
         :class="[$slots.prefix ? 'pl-8' : '', error ? 'border-red-600 focus-visible:border-red-600 focus-visible:ring-red-600/15' : '']"
         v-bind="$attrs"
+        @input="onInput"
       />
     </div>
     <p v-if="error" :id="errorId" class="text-sm text-red-700">{{ error }}</p>

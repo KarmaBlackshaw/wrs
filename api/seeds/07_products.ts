@@ -8,12 +8,12 @@ export async function seed(knex: Knex) {
 
   await knex("products").insert(
     [
-      { id: PRODUCT.roundRefill, name: "Round refill", kind: "refill", container_type: "round" },
-      { id: PRODUCT.slimRefill, name: "Slim refill", kind: "refill", container_type: "slim" },
-      { id: PRODUCT.roundContainer, name: "Round container (new)", kind: "container", container_type: "round" },
-      { id: PRODUCT.slimContainer, name: "Slim container (new)", kind: "container", container_type: "slim" },
-      { id: PRODUCT.bottled, name: "Bottled water 500 ml", kind: "bottled" },
-      { id: PRODUCT.ice, name: "Ice tube (pack)", kind: "other" },
+      { id: PRODUCT.roundRefill, name: "Round Container Refill", kind: "refill", container_type: "round" },
+      { id: PRODUCT.slimRefill, name: "Slim Container Refill", kind: "refill", container_type: "slim" },
+      { id: PRODUCT.roundContainer, name: "Round Container (new)", kind: "container", container_type: "round" },
+      { id: PRODUCT.slimContainer, name: "Slim Container (new)", kind: "container", container_type: "slim" },
+      { id: PRODUCT.bottled, name: "Bottled Water 500mL", kind: "bottled" },
+      { id: PRODUCT.ice, name: "Ice, per bag", kind: "other" },
     ].map((p) => ({ ...p, created_at }))
   );
 }

@@ -1,30 +1,52 @@
 <script setup lang="ts">
-import type { TPrice, TProduct } from "@/types";
+import type { TProduct } from "@wrs/contract/product";
+
+import { listProductPrices } from "@/services/product";
 
 const product = defineModel<TProduct>("product");
 
-defineProps<{
-  prices: TPrice[];
-}>();
+const {
+  data: prices,
+  isLoading,
+  error,
+  reload,
+} = useResource(async (signal) => (product.value != null ? listProductPrices(product.value.id, signal) : []), { watch: product });
 
-const open = computed({
+const isOpen = computed({
   get: () => product.value != null,
-  set: (isOpen) => {
-    if (!isOpen) {
+  set: (value) => {
+    if (!value) {
       product.value = undefined;
     }
   },
 });
+
+const columns = [
+  { key: "effectiveFrom", label: "Effective" },
+  { key: "amount", label: "Price", align: "right" as const },
+];
+
+function isScheduled(effectiveFrom: string) {
+  return new Date(effectiveFrom).getTime() > Date.now();
+}
 </script>
 
 <template>
-  <UiBottomSheet v-model:open="open" title="Price history">
-    <p class="text-sm text-zinc-500">{{ product?.name }}</p>
-    <ul class="mt-2 flex flex-col gap-1 text-sm text-zinc-600">
-      <li v-for="price in prices" :key="price.effectiveFrom" class="flex justify-between">
-        <span>From {{ formatDate(price.effectiveFrom) }}</span>
-        <UiMoneyText :centavos="price.amount" size="sm" tone="muted" />
-      </li>
-    </ul>
+  <UiBottomSheet v-model:open="isOpen" title="Price history">
+    <p class="mb-2 text-sm text-zinc-500">{{ product?.name }}</p>
+    <UiDataTable bare :columns :rows="prices ?? []" :row-key="(row) => row.effectiveFrom" :is-loading :error="error?.message" @retry="reload">
+      <template #cell-effectiveFrom="{ row }">
+        <div class="flex items-center gap-2">
+          <span class="text-zinc-700">{{ formatDate(row.effectiveFrom) }}</span>
+          <UiStatusPill v-if="isScheduled(row.effectiveFrom)" tone="info">Scheduled</UiStatusPill>
+        </div>
+      </template>
+      <template #cell-amount="{ row }">
+        <UiMoneyText :centavos="row.amount" size="sm" />
+      </template>
+      <template #empty>
+        <UiEmptyState title="No prices yet" />
+      </template>
+    </UiDataTable>
   </UiBottomSheet>
 </template>

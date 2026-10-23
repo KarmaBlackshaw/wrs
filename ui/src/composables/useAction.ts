@@ -8,6 +8,10 @@ export function useAction<A extends unknown[], R>(fn: (...args: A) => Promise<R>
   const error = shallowRef<ApiError>();
 
   async function run(...args: A) {
+    if (isRunning.value) {
+      return undefined;
+    }
+
     isRunning.value = true;
     error.value = undefined;
 

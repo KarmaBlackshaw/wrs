@@ -1,113 +1,100 @@
 <script setup lang="ts">
-import startCase from "lodash/startCase";
+import type { TSettingEntry, TSettingKey } from "@wrs/contract/setting";
 
 import { IconGear } from "@/components";
-import { settings as settingsMock } from "@/mocks/settings";
-import { OWNER_TABS, ROUTES, type TRowAction, type TSetting } from "@/types";
+import { listSettings } from "@/services/setting";
+import { OWNER_TABS, ROUTES, type TRowAction } from "@/types";
+import type { TSettingTarget } from "@/types/labels/setting";
+
+type TSettingRow = { key: string; label: string; display?: string; scheduled?: string; target?: TSettingTarget };
 
 definePage({ meta: { title: "Settings" } });
 
 const route = useRoute("/owner/settings/[[group]]");
-const toast = useToast();
+const containerTypeStore = useContainerTypeStore();
+const { types: containerTypes } = storeToRefs(containerTypeStore);
+const { data: entries, isLoading, error, reload } = useResource(listSettings);
 
-const settingsHistory = ref<TSetting[]>([...settingsMock]);
+containerTypeStore.load();
 
-const settingLabel: Record<string, string> = {
-  "rider.dailyQuota": "Rider daily quota",
-  "rider.incentivePerContainer": "Incentive per container above quota",
-  "pay.frequency": "Pay frequency",
-  "pay.baseRate": "Base rate",
-  "pay.deductionCapPct": "Deduction cap",
-  "loan.interestRatePct": "Loan interest rate",
-  "loan.interestMethod": "Loan interest method",
-  "loan.maxAmount": "Max loan amount",
-  "loan.maxTermMonths": "Max loan term",
-  "container.depositAmount.round": "Container deposit (round)",
-  "container.depositAmount.slim": "Container deposit (slim)",
-  "customer.creditLimit": "Customer credit limit",
-  "void.approvalThreshold": "Void approval threshold",
-  "water.tdsAcceptableRangePpm": "TDS acceptable range",
-  "labTest.reminderDays": "Lab test reminder",
-  "digest.sendTime": "Digest send time",
-};
-
-const moneyKeys = new Set([
-  "pay.baseRate",
-  "rider.incentivePerContainer",
-  "loan.maxAmount",
-  "container.depositAmount.round",
-  "container.depositAmount.slim",
-  "customer.creditLimit",
-  "void.approvalThreshold",
-]);
-
-const unitSuffix: Record<string, string> = {
-  "rider.dailyQuota": "containers",
-  "loan.interestRatePct": "% per month",
-  "pay.deductionCapPct": "% of gross",
-  "loan.maxTermMonths": "months",
-  "labTest.reminderDays": "days before due",
-  "water.tdsAcceptableRangePpm": "ppm",
-};
-
-const groupKeys: Record<string, string[]> = {
-  [ROUTES.OWNER.SETTINGS.INDEX]: ["rider.dailyQuota", "rider.incentivePerContainer", "pay.frequency", "pay.baseRate", "pay.deductionCapPct"],
+const groupKeys: Record<string, TSettingKey[]> = {
+  [ROUTES.OWNER.SETTINGS.INDEX]: ["rider.dailyQuota", "rider.incentivePerContainer", "pay.frequency", "pay.baseRate", "pay.deductionCapPct", "pto.daysPerYear"],
   [ROUTES.OWNER.SETTINGS.LOANS]: ["loan.interestRatePct", "loan.interestMethod", "loan.maxAmount", "loan.maxTermMonths"],
-  [ROUTES.OWNER.SETTINGS.CONTAINERS_CREDIT]: [
-    "container.depositAmount.round",
-    "container.depositAmount.slim",
-    "customer.creditLimit",
-    "void.approvalThreshold",
-  ],
-  [ROUTES.OWNER.SETTINGS.WATER_QUALITY]: ["water.tdsAcceptableRangePpm", "labTest.reminderDays"],
+  [ROUTES.OWNER.SETTINGS.CONTAINERS_CREDIT]: ["customer.creditLimit", "void.approvalThreshold"],
+  [ROUTES.OWNER.SETTINGS.WATER_QUALITY]: ["water.tdsRangePpm", "labTest.reminderDays"],
   [ROUTES.OWNER.SETTINGS.DIGEST]: ["digest.sendTime"],
 };
 
 const title = computed(() => OWNER_TABS.SETTINGS.find((tab) => tab.to === route.path)?.label ?? "Settings");
 
-const settingsColumns = [
-  { key: "setting", label: "Setting" },
-  { key: "value", label: "Value" },
-];
+const isWide = useMediaQuery("(min-width: 640px)");
 
-const settingsRows = computed(() => (groupKeys[route.path] ?? []).map((key) => ({ key, setting: currentSetting(key) })));
+const columns = computed(() =>
+  isWide.value
+    ? [
+        { key: "setting", label: "Setting" },
+        { key: "value", label: "Value" },
+      ]
+    : [{ key: "setting", label: "Setting" }]
+);
 
-function currentSetting(key: string) {
-  const found = latestEffective(settingsHistory.value.filter((setting) => setting.key === key));
+function scheduledHint({ key, history }: TSettingEntry) {
+  const today = todayIso();
+  const upcoming = history.filter(({ effectiveFrom }) => effectiveFrom > today).sort((x, y) => x.effectiveFrom.localeCompare(y.effectiveFrom))[0];
 
-  return found ?? { key, value: null, effectiveFrom: "" };
+  return upcoming != null ? `Scheduled: ${formatSettingValue({ key, value: upcoming.value })} from ${formatDate(upcoming.effectiveFrom)}` : undefined;
 }
 
-function displayValue(setting: TSetting) {
-  if (setting.value === null) {
-    return null;
+const rows = computed((): TSettingRow[] => {
+  const settingRows = (groupKeys[route.path] ?? []).flatMap((key) => {
+    const entry = entries.value?.find((item) => item.key === key);
+
+    return entry != null
+      ? [
+          {
+            key,
+            label: SETTING_LABEL[key],
+            display: entry.value != null ? formatSettingValue(entry) : undefined,
+            scheduled: scheduledHint(entry),
+            target: { kind: "setting" as const, entry },
+          },
+        ]
+      : [];
+  });
+
+  if (route.path !== ROUTES.OWNER.SETTINGS.CONTAINERS_CREDIT) {
+    return settingRows;
   }
 
-  if (moneyKeys.has(setting.key)) {
-    return formatMoney(typeof setting.value === "number" ? setting.value : Number(setting.value));
+  const depositRows = containerTypes.value.map((containerType) => ({
+    key: `deposit.${containerType.code}`,
+    label: `${CONTAINER_TYPE_LABEL[containerType.code]} container deposit`,
+    display: formatMoney(containerType.depositAmount),
+    target: { kind: "deposit" as const, containerType },
+  }));
+
+  return [...depositRows, ...settingRows];
+});
+
+async function refresh() {
+  await Promise.all([reload(), containerTypeStore.refresh()]);
+}
+
+const editTarget = ref<TSettingTarget>();
+const historyEntry = ref<TSettingEntry>();
+
+function rowActions({ target }: TSettingRow): TRowAction[] {
+  if (target == null) {
+    return [];
   }
 
-  const suffix = unitSuffix[setting.key];
+  const actions: TRowAction[] = [{ label: "Edit", onSelect: () => (editTarget.value = target) }];
 
-  if (suffix) {
-    return `${setting.value} ${suffix}`;
+  if (target.kind === "setting") {
+    actions.push({ label: "History", onSelect: () => (historyEntry.value = target.entry) });
   }
 
-  return typeof setting.value === "string" ? startCase(setting.value) : String(setting.value);
-}
-
-const editSetting = ref<TSetting>();
-
-function addSetting(setting: TSetting) {
-  settingsHistory.value.push(setting);
-}
-
-function saveChanges() {
-  toast.show("Saved");
-}
-
-function settingActions({ setting }: { setting: TSetting }): TRowAction[] {
-  return [{ label: "Edit", onSelect: () => (editSetting.value = setting) }];
+  return actions;
 }
 </script>
 
@@ -115,13 +102,33 @@ function settingActions({ setting }: { setting: TSetting }): TRowAction[] {
   <div class="flex flex-col gap-4">
     <p class="text-sm text-zinc-500">Changing settings requires an online connection.</p>
 
-    <UiDataTable :row-actions="settingActions" :title="title" :icon="IconGear" :columns="settingsColumns" :rows="settingsRows" :row-key="(row) => row.key">
-      <template #actions>
-        <UiButton @click="saveChanges">Save changes</UiButton>
+    <UiDataTable
+      :row-actions
+      :title
+      :icon="IconGear"
+      :columns
+      :rows
+      :row-key="(row) => row.key"
+      :row-label="(row) => row.label"
+      :is-loading="isLoading"
+      :error="error?.message"
+      @retry="reload"
+    >
+      <template #cell-setting="{ row }">
+        <div class="flex max-w-40 flex-col whitespace-normal sm:max-w-none">
+          <span>{{ row.label }}</span>
+          <div class="flex flex-col sm:hidden">
+            <span v-if="row.display != null" class="text-zinc-700">{{ row.display }}</span>
+            <UiStatusPill v-else tone="warn" class="self-start">Not set</UiStatusPill>
+            <span v-if="row.scheduled != null" class="text-xs text-zinc-500">{{ row.scheduled }}</span>
+          </div>
+        </div>
       </template>
-      <template #cell-setting="{ row }">{{ settingLabel[row.key] }}</template>
       <template #cell-value="{ row }">
-        <span v-if="displayValue(row.setting) !== null" class="text-zinc-700">{{ displayValue(row.setting) }}</span>
+        <div v-if="row.display != null" class="flex flex-col">
+          <span class="text-zinc-700">{{ row.display }}</span>
+          <span v-if="row.scheduled != null" class="text-xs text-zinc-500">{{ row.scheduled }}</span>
+        </div>
         <UiStatusPill v-else tone="warn">Not set</UiStatusPill>
       </template>
     </UiDataTable>
@@ -132,6 +139,7 @@ function settingActions({ setting }: { setting: TSetting }): TRowAction[] {
       <RouterLink :to="ROUTES.OWNER.INVENTORY.MAINTENANCE" class="underline">Maintenance</RouterLink>.
     </p>
 
-    <SettingEditSheet v-model:setting="editSetting" :setting-label="settingLabel" :money-keys="moneyKeys" @submit="addSetting" />
+    <SettingEditSheet v-model:target="editTarget" @submit="refresh" />
+    <SettingHistorySheet v-model:entry="historyEntry" />
   </div>
 </template>

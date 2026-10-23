@@ -2,8 +2,9 @@
 import type { TOption } from "@/types";
 const model = defineModel<T>({ required: true });
 
-const { options } = defineProps<{
+const { options, label } = defineProps<{
   options: TOption<T>[];
+  label?: string;
 }>();
 
 const buttons = useTemplateRef<HTMLButtonElement[]>("buttons");
@@ -32,6 +33,7 @@ function move(delta: number) {
   <div
     class="inline-flex rounded-lg bg-zinc-100 p-1"
     role="radiogroup"
+    :aria-label="label"
     @keydown.right.prevent="move(1)"
     @keydown.down.prevent="move(1)"
     @keydown.left.prevent="move(-1)"
@@ -45,7 +47,7 @@ function move(delta: number) {
       role="radio"
       :aria-checked="model === option.value"
       :tabindex="index === focusableIndex ? 0 : -1"
-      class="flex-1 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-brand-600"
+      class="min-h-11 flex-1 rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-brand-600"
       :class="model === option.value ? 'bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-950/5' : 'text-zinc-600 hover:text-zinc-900'"
       @click="model = option.value"
     >

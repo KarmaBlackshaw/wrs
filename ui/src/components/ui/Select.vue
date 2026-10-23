@@ -1,4 +1,4 @@
-<script setup lang="ts" generic="T extends string">
+<script setup lang="ts" generic="T extends string | number">
 import type { TOption } from "@/types";
 const model = defineModel<T | null>();
 
@@ -6,11 +6,13 @@ const {
   options,
   error,
   placeholder = "Select an option",
+  isClearable = false,
 } = defineProps<{
   label: string;
   options: TOption<T>[];
   error?: string;
   placeholder?: string;
+  isClearable?: boolean;
 }>();
 
 defineOptions({ inheritAttrs: false });
@@ -26,6 +28,8 @@ const { open, floatingStyles } = useFloatingPanel(trigger, panel);
 
 const activeIndex = ref(-1);
 
+const rows = computed(() => [...(isClearable ? [{ value: null, label: placeholder }] : []), ...options]);
+
 const selected = computed(() => options.find((option) => option.value === model.value) ?? null);
 
 function optionId(index: number) {
@@ -35,14 +39,14 @@ function optionId(index: number) {
 function show() {
   activeIndex.value = Math.max(
     0,
-    options.findIndex((option) => option.value === model.value)
+    rows.value.findIndex((option) => option.value === model.value)
   );
 
   open.value = true;
 }
 
 function choose(index: number) {
-  const option = options[index];
+  const option = rows.value[index];
 
   if (option) {
     model.value = option.value;
@@ -58,7 +62,7 @@ function move(delta: number) {
     return;
   }
 
-  activeIndex.value = Math.min(options.length - 1, Math.max(0, activeIndex.value + delta));
+  activeIndex.value = Math.min(rows.value.length - 1, Math.max(0, activeIndex.value + delta));
 }
 
 function onEscape(event: KeyboardEvent) {
@@ -106,7 +110,7 @@ watch(activeIndex, (index) => panel.value?.querySelector(`#${CSS.escape(optionId
       @keydown.down.prevent="move(1)"
       @keydown.up.prevent="move(-1)"
       @keydown.home.prevent="open && (activeIndex = 0)"
-      @keydown.end.prevent="open && (activeIndex = options.length - 1)"
+      @keydown.end.prevent="open && (activeIndex = rows.length - 1)"
       @keydown.enter.prevent="onEnter"
       @keydown.space.prevent="onEnter"
       @keydown.esc="onEscape"
@@ -125,9 +129,9 @@ watch(activeIndex, (index) => panel.value?.querySelector(`#${CSS.escape(optionId
       :style="floatingStyles"
     >
       <li
-        v-for="(option, index) in options"
+        v-for="(option, index) in rows"
         :id="optionId(index)"
-        :key="option.value"
+        :key="option.value ?? ''"
         role="option"
         :aria-selected="option.value === model"
         class="flex cursor-pointer items-center justify-between gap-3 rounded-md px-2.5 py-2 text-sm text-zinc-800"
