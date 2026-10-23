@@ -21,12 +21,12 @@ function logout() {
   router.push(ROUTES.LOGIN);
 }
 
-const roleOptions = computed(() => authStore.user?.roles.map((role) => ({ value: role, label: ROLE_LABEL[role] })) ?? []);
+const roleOptions = computed(() => authStore.me?.roles.map((role) => ({ value: role, label: ROLE_LABEL[role] })) ?? []);
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <UiSelect v-if="authStore.user && authStore.user.roles.length > 1" v-model="activeRole" label="Switch role" :options="roleOptions" />
+    <UiSelect v-if="authStore.me && authStore.me.roles.length > 1" v-model="activeRole" label="Switch role" :options="roleOptions" />
     <UiButton variant="ghost" block @click="logout">
       <IconSignOut class="size-5" />
       Log out

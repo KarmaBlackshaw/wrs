@@ -22,7 +22,7 @@ watch(
 
 <template>
   <div class="ml-auto flex min-w-0 items-center gap-3">
-    <template v-if="authStore.user">
+    <template v-if="authStore.meName">
       <button
         ref="trigger"
         type="button"
@@ -34,10 +34,10 @@ watch(
         @click="open = !open"
       >
         <span class="grid size-8 shrink-0 place-items-center rounded-full bg-brand-100 text-sm font-semibold text-brand-800">{{
-          initials(authStore.user.name)
+          initials(authStore.meName)
         }}</span>
         <span class="hidden min-w-0 flex-col text-left leading-tight sm:flex">
-          <span class="truncate text-sm font-medium text-zinc-900">{{ authStore.user.name }}</span>
+          <span class="truncate text-sm font-medium text-zinc-900">{{ authStore.meName }}</span>
           <span v-if="authStore.activeRole" class="text-xs text-zinc-500">{{ ROLE_LABEL[authStore.activeRole] }}</span>
         </span>
         <IconCaretDown class="size-4 shrink-0 text-zinc-500" />

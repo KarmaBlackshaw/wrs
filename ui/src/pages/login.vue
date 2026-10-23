@@ -1,39 +1,76 @@
 <script setup lang="ts">
-import { employees } from "@/mocks/employees";
+import type { TErrorCode } from "@wrs/contract/common";
+
+import { ApiError } from "@/lib/http";
 import { ROLE_HOME, ROLE_LABEL, type TRole } from "@/types";
 
 definePage({ meta: { layout: "Auth", title: "Log in" } });
+
+const LOGIN_ERROR_MESSAGE: Partial<Record<TErrorCode | "network", string>> = {
+  "auth.invalid_credentials": "Incorrect username or password",
+  "auth.inactive": "This account is inactive",
+};
 
 const authStore = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 
-const selectedEmployeeId = ref<string>();
+const username = ref("");
+const password = ref("");
+const errorMessage = ref<string>();
+const isSubmitting = ref(false);
+const roleHeading = useTemplateRef("roleHeading");
 
-const selectedEmployee = computed(() => employees.find((employee) => employee.id === selectedEmployeeId.value) ?? null);
+const isPickingRole = computed(() => authStore.me != null && authStore.activeRole == null);
+const title = computed(() => (isPickingRole.value ? "Choose a role" : "Log in"));
+const subtitle = computed(() => (isPickingRole.value ? `Log in as ${authStore.meName}` : "Enter your username and password"));
 
-function pickEmployee(employeeId: string) {
-  const employee = employees.find((candidate) => candidate.id === employeeId);
-
-  if (!employee) {
+watch(isPickingRole, async (isPicking) => {
+  if (!isPicking) {
     return;
   }
 
-  if (employee.roles.length === 1 && employee.roles[0]) {
-    completeLogin(employee.id, employee.roles[0]);
+  await nextTick();
+  roleHeading.value?.focus();
+});
 
-    return;
-  }
-
-  selectedEmployeeId.value = employee.id;
-}
-
-function completeLogin(employeeId: string, role: TRole) {
-  authStore.login(employeeId, role);
-
+function goHome(role: TRole) {
   const redirect = route.query.redirect;
 
   router.push(typeof redirect === "string" && redirect.startsWith("/") ? redirect : ROLE_HOME[role]);
+}
+
+async function submit() {
+  errorMessage.value = undefined;
+  isSubmitting.value = true;
+
+  try {
+    await authStore.login({ username: username.value, password: password.value });
+  } catch (caught) {
+    if (!(caught instanceof ApiError)) {
+      throw caught;
+    }
+
+    errorMessage.value = LOGIN_ERROR_MESSAGE[caught.code] ?? caught.message;
+
+    return;
+  } finally {
+    isSubmitting.value = false;
+  }
+
+  if (authStore.activeRole != null) {
+    goHome(authStore.activeRole);
+  }
+}
+
+function pickRole(role: TRole) {
+  authStore.switchRole(role);
+  goHome(role);
+}
+
+function back() {
+  authStore.logout();
+  password.value = "";
 }
 </script>
 
@@ -49,34 +86,22 @@ function completeLogin(employeeId: string, role: TRole) {
     </div>
 
     <div class="flex flex-col gap-1">
-      <h1 class="text-2xl font-semibold tracking-tight">{{ selectedEmployee ? "Choose a role" : "Log in" }}</h1>
-      <p class="text-sm text-zinc-500">{{ selectedEmployee ? `Log in as ${selectedEmployee.name}` : "Select your name" }}</p>
+      <h1 ref="roleHeading" tabindex="-1" class="text-2xl font-semibold tracking-tight outline-none">{{ title }}</h1>
+      <p class="text-sm text-zinc-500">{{ subtitle }}</p>
     </div>
 
-    <ul v-if="!selectedEmployee" class="divide-y divide-zinc-100 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-xs">
-      <li v-for="employee in employees" :key="employee.id">
-        <button
-          type="button"
-          class="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-zinc-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600"
-          @click="pickEmployee(employee.id)"
-        >
-          <span class="grid size-10 shrink-0 place-items-center rounded-full bg-brand-50 text-sm font-semibold text-brand-800">{{
-            initials(employee.name)
-          }}</span>
-          <span class="flex min-w-0 flex-1 flex-col">
-            <span class="truncate text-sm font-medium text-zinc-900">{{ employee.name }}</span>
-            <span class="truncate text-sm text-zinc-500">{{ employee.roles.map((role) => ROLE_LABEL[role]).join(", ") }}</span>
-          </span>
-          <IconCaretRight class="size-4 shrink-0 text-zinc-400" />
-        </button>
-      </li>
-    </ul>
+    <form v-if="!isPickingRole" class="flex flex-col gap-4" @submit.prevent="submit">
+      <UiField v-model="username" label="Username" autocomplete="username" autocapitalize="none" spellcheck="false" />
+      <UiField v-model="password" label="Password" type="password" autocomplete="current-password" />
+      <p v-if="errorMessage" role="alert" class="text-sm text-red-700">{{ errorMessage }}</p>
+      <UiButton type="submit" size="lg" block :loading="isSubmitting">Log in</UiButton>
+    </form>
 
-    <div v-else class="flex flex-col gap-3">
-      <UiButton v-for="role in selectedEmployee.roles" :key="role" block @click="completeLogin(selectedEmployee.id, role)">
+    <div v-else-if="authStore.me" class="flex flex-col gap-3">
+      <UiButton v-for="role in authStore.me.roles" :key="role" block @click="pickRole(role)">
         {{ ROLE_LABEL[role] }}
       </UiButton>
-      <UiButton variant="ghost" block @click="selectedEmployeeId = undefined">
+      <UiButton variant="ghost" block @click="back">
         <IconArrowLeft class="size-5" />
         Back
       </UiButton>

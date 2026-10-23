@@ -17,6 +17,7 @@ export * from "./reports/buildReportTable";
 export * from "./reports/loanBalance";
 export * from "./reports/maintenanceStates";
 export * from "./reports/salesTotal";
+export * from "./strings/fullName";
 export * from "./strings/initials";
 export * from "./trips/tripSummary";
 export * from "./variance/formatVariance";

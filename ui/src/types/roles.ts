@@ -1,6 +1,8 @@
+import type { TRole } from "@wrs/contract/auth";
+
 import { ROUTES } from "@/types/routes";
 
-export type TRole = "owner" | "cashier" | "rider" | "washer" | "helper";
+export type { TRole };
 
 export const ROLE_HOME: Record<TRole, string> = {
   owner: ROUTES.OWNER.INDEX,

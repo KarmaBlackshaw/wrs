@@ -18,6 +18,7 @@ export * from "./entities/settings";
 export * from "./entities/trip";
 export * from "./entities/water";
 export * from "./labels/aging";
+export * from "./labels/container";
 export * from "./labels/loan";
 export * from "./labels/payment";
 export * from "./labels/payroll";

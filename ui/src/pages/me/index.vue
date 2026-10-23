@@ -12,8 +12,8 @@ function payRunFor(runId: string) {
   return payRuns.find((run) => run.id === runId) ?? null;
 }
 
-const myPayLines = computed(() => payLines.filter((line) => line.employeeId === authStore.user?.id && payRunFor(line.runId)?.status === "finalized"));
-const myLoans = computed(() => loans.filter((loan) => loan.employeeId === authStore.user?.id));
+const myPayLines = computed(() => payLines.filter((line) => line.employeeId === authStore.me?.id && payRunFor(line.runId)?.status === "finalized"));
+const myLoans = computed(() => loans.filter((loan) => loan.employeeId === authStore.me?.id));
 
 function payLineTitle(runId: string) {
   const period = payRunFor(runId);
@@ -44,7 +44,7 @@ const sheetOpen = ref(false);
 
 <template>
   <div class="flex flex-col gap-4">
-    <UiPageHeader title="Me" :subtitle="authStore.user?.name">
+    <UiPageHeader title="Me" :subtitle="authStore.meName">
       <template #actions>
         <UiButton @click="sheetOpen = true">Request advance or loan</UiButton>
       </template>

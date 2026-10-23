@@ -24,7 +24,7 @@ const columns = [
 const acceptedIds = ref(new Set<string>());
 
 function riderOf(customer: TCustomer) {
-  return acceptedIds.value.has(customer.id) ? authStore.user?.id : customer.riderId;
+  return acceptedIds.value.has(customer.id) ? authStore.me?.id : customer.riderId;
 }
 
 const scoped = computed(() => {
@@ -32,7 +32,7 @@ const scoped = computed(() => {
     return customers;
   }
 
-  const riderId = scope === "mine" ? authStore.user?.id : undefined;
+  const riderId = scope === "mine" ? authStore.me?.id : undefined;
 
   return customers.filter((customer) => riderOf(customer) === riderId);
 });

@@ -16,5 +16,6 @@ export const meSchema = z.object({
 export const loginResponseSchema = z.object({ token: z.string(), me: meSchema });
 
 export type TRole = z.infer<typeof roleSchema>;
+export type TLoginBody = z.infer<typeof loginBodySchema>;
 export type TMe = z.infer<typeof meSchema>;
 export type TLoginResponse = z.infer<typeof loginResponseSchema>;

@@ -11,5 +11,8 @@ export const env = z
     DB_NAME: z.string(),
     DB_USER: z.string(),
     DB_PASSWORD: z.string(),
+    JWT_SECRET: z.string().min(32),
+    JWT_EXPIRES_IN: z.string().default("30d"),
+    UPLOAD_DIR: z.string().default("uploads"),
   })
   .parse(process.env);

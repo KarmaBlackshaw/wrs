@@ -10,14 +10,6 @@ const { clickable = false } = defineProps<{
 const emit = defineEmits<{
   "row-click": [row: T];
 }>();
-
-function onRowClick(row: T) {
-  if (!clickable) {
-    return;
-  }
-
-  emit("row-click", row);
-}
 </script>
 
 <template>
@@ -45,25 +37,31 @@ function onRowClick(row: T) {
         <tr
           v-for="row in rows"
           :key="rowKey(row)"
-          class="focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600"
+          class="relative"
           :class="[
-            clickable ? 'cursor-pointer transition-colors hover:bg-zinc-50' : '',
+            clickable ? 'transition-colors hover:bg-zinc-50' : '',
             activeKey != null && rowKey(row) === activeKey ? 'bg-brand-50 hover:bg-brand-50' : '',
           ]"
           :aria-current="activeKey != null && rowKey(row) === activeKey ? 'true' : undefined"
-          :tabindex="clickable ? 0 : undefined"
-          :role="clickable ? 'button' : undefined"
-          @click="onRowClick(row)"
-          @keydown.enter="onRowClick(row)"
-          @keydown.space.prevent="onRowClick(row)"
         >
           <td
             v-for="column in columns"
             :key="column.key"
             class="px-4 py-3.5 text-zinc-600 first:pl-5 last:pr-5"
-            :class="column.align === 'right' ? 'text-right tabular-nums' : 'text-left'"
+            :class="[
+              column.align === 'right' ? 'text-right tabular-nums' : 'text-left',
+              column !== columns[0] ? 'pointer-events-none relative z-10 [&_:is(a,button,input,select,textarea)]:pointer-events-auto' : '',
+            ]"
           >
-            <slot :name="`cell-${column.key}`" :row="row">{{ row[column.key] }}</slot>
+            <button
+              v-if="clickable && column === columns[0]"
+              type="button"
+              class="cursor-pointer text-left after:absolute after:inset-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand-600"
+              @click="emit('row-click', row)"
+            >
+              <slot :name="`cell-${column.key}`" :row="row">{{ row[column.key] }}</slot>
+            </button>
+            <slot v-else :name="`cell-${column.key}`" :row="row">{{ row[column.key] }}</slot>
           </td>
         </tr>
       </tbody>

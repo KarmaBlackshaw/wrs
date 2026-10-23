@@ -2,16 +2,30 @@ import { ROLE_HOME, ROLE_LABEL, ROUTES, type Middleware } from "@/types";
 
 const PUBLIC_PATHS = new Set<string>([ROUTES.LOGIN]);
 
-const auth: Middleware = (to) => {
+let hasRehydrated = false;
+
+const auth: Middleware = async (to) => {
   const isPublic = PUBLIC_PATHS.has(to.path);
   const authStore = useAuthStore();
   const toast = useToast();
 
-  if (!isPublic && !authStore.isAuthenticated) {
+  if (!hasRehydrated) {
+    hasRehydrated = true;
+
+    if (authStore.token != null && navigator.onLine) {
+      try {
+        await authStore.fetchMe();
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+
+  if (!isPublic && (!authStore.isAuthenticated || authStore.activeRole == null)) {
     return { path: ROUTES.LOGIN, query: { redirect: to.fullPath } };
   }
 
-  if (isPublic && authStore.isAuthenticated && authStore.activeRole) {
+  if (isPublic && authStore.isAuthenticated && authStore.activeRole != null) {
     return ROLE_HOME[authStore.activeRole];
   }
 

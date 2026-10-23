@@ -1,27 +1,31 @@
-import type { TEmployee, TRole } from "@/types";
-import { employees } from "@/mocks/employees";
+import type { TLoginBody, TMe, TRole } from "@wrs/contract/auth";
+
+import { getMe, login as loginRequest } from "@/services/auth";
 
 export const useAuthStore = defineStore(
   "auth",
   () => {
-    const user = ref<TEmployee>();
+    const token = ref<string>();
     const activeRole = ref<TRole>();
+    const me = ref<TMe>();
 
-    const isAuthenticated = computed(() => user.value != null);
+    const isAuthenticated = computed(() => token.value != null);
+    const meName = computed(() => (me.value != null ? fullName(me.value) : undefined));
 
-    function login(employeeId: string, role: TRole) {
-      const employee = employees.find((candidate) => candidate.id === employeeId);
+    async function login(body: TLoginBody) {
+      const response = await loginRequest(body);
 
-      if (!employee || !employee.roles.includes(role)) {
-        throw new Error("Employee does not hold that role.");
-      }
+      token.value = response.token;
+      me.value = response.me;
+      activeRole.value = response.me.roles.length === 1 ? response.me.roles[0] : undefined;
+    }
 
-      user.value = employee;
-      activeRole.value = role;
+    async function fetchMe() {
+      me.value = await getMe();
     }
 
     function switchRole(role: TRole) {
-      if (!user.value?.roles.includes(role)) {
+      if (!me.value?.roles.includes(role)) {
         throw new Error("Employee does not hold that role.");
       }
 
@@ -29,11 +33,12 @@ export const useAuthStore = defineStore(
     }
 
     function logout() {
-      user.value = undefined;
+      token.value = undefined;
       activeRole.value = undefined;
+      me.value = undefined;
     }
 
-    return { user, activeRole, isAuthenticated, login, switchRole, logout };
+    return { token, activeRole, me, isAuthenticated, meName, login, fetchMe, switchRole, logout };
   },
-  { persist: { pick: ["user", "activeRole"] } }
+  { persist: { pick: ["token", "activeRole", "me"] } }
 );

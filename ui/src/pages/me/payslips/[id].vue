@@ -8,7 +8,7 @@ const route = useRoute();
 const authStore = useAuthStore();
 
 const runId = computed(() => String(route.params.id));
-const payLine = computed(() => payLines.find((line) => line.runId === runId.value && line.employeeId === authStore.user?.id) ?? null);
+const payLine = computed(() => payLines.find((line) => line.runId === runId.value && line.employeeId === authStore.me?.id) ?? null);
 const payRun = computed(() => payRuns.find((run) => run.id === runId.value) ?? null);
 
 const deductionColumns: { key: string; label: string; align?: "left" | "right" }[] = [
