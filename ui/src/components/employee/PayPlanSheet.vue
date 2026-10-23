@@ -15,12 +15,12 @@ const emit = defineEmits<{
 const toast = useToast();
 
 const rateBasisOptions: TOption<TRateBasis>[] = [
-  { value: "per-day", label: "Per day" },
-  { value: "per-period", label: "Per period" },
+  { value: "per_day", label: "Per day" },
+  { value: "per_period", label: "Per period" },
 ];
 
 const frequency = ref<TPayFrequency>("monthly");
-const rateBasis = ref<TRateBasis>("per-period");
+const rateBasis = ref<TRateBasis>("per_period");
 const baseRate = ref("");
 const quota = ref(0);
 const incentive = ref("");
@@ -33,7 +33,7 @@ watch(open, (isOpen) => {
   }
 
   frequency.value = plan?.frequency ?? "monthly";
-  rateBasis.value = plan?.rateBasis ?? "per-period";
+  rateBasis.value = plan?.rateBasis ?? "per_period";
   baseRate.value = plan ? String(plan.baseRate / 100) : "";
   quota.value = plan?.quota ?? 0;
   incentive.value = plan?.incentivePerContainer ? String(plan.incentivePerContainer / 100) : "";

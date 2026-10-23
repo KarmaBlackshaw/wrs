@@ -1,4 +1,4 @@
-export type TConsumableKind = "per-unit" | "maintenance" | "general";
+export type TConsumableKind = "per_unit" | "maintenance" | "general";
 
 export type TConsumable = {
   id: string;

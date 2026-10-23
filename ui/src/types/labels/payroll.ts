@@ -1,4 +1,5 @@
-import type { TPayFrequency, TPayLineDeduction } from "@/types/entities/payroll";
+import type { TPayFrequency } from "@wrs/contract/employee";
+import type { TPayLineDeduction } from "@/types/entities/payroll";
 import type { TOption } from "@/types/ui";
 
 export const DEDUCTION_LABEL: Record<TPayLineDeduction["kind"], string> = {
@@ -10,13 +11,13 @@ export const DEDUCTION_LABEL: Record<TPayLineDeduction["kind"], string> = {
 export const PAY_FREQUENCY_LABEL: Record<TPayFrequency, string> = {
   daily: "Daily",
   weekly: "Weekly",
-  "semi-monthly": "Semi-monthly",
+  semi_monthly: "Semi-monthly",
   monthly: "Monthly",
 };
 
 export const PAY_FREQUENCY_OPTIONS: TOption<TPayFrequency>[] = [
   { value: "daily", label: PAY_FREQUENCY_LABEL.daily },
   { value: "weekly", label: PAY_FREQUENCY_LABEL.weekly },
-  { value: "semi-monthly", label: PAY_FREQUENCY_LABEL["semi-monthly"] },
+  { value: "semi_monthly", label: PAY_FREQUENCY_LABEL.semi_monthly },
   { value: "monthly", label: PAY_FREQUENCY_LABEL.monthly },
 ];

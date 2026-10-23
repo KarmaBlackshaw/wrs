@@ -25,12 +25,21 @@ function isApiErrorBody(data: unknown): data is TApiError {
   return typeof data === "object" && data != null && "code" in data && typeof data.code === "string" && "message" in data && typeof data.message === "string";
 }
 
-function toApiError(error: unknown) {
+async function readErrorBody(data: unknown): Promise<unknown> {
+  if (data instanceof Blob && data.type.startsWith("application/json")) {
+    return JSON.parse(await data.text());
+  }
+
+  return data;
+}
+
+async function toApiError(error: unknown) {
   if (!axios.isAxiosError(error) || error.response == null) {
     return new ApiError({ status: 0, code: "network", message: NETWORK_ERROR_MESSAGE });
   }
 
-  const { status, data } = error.response;
+  const { status } = error.response;
+  const data = await readErrorBody(error.response.data);
 
   if (isApiErrorBody(data)) {
     return new ApiError({ status, code: data.code, message: data.message, details: data.details });
@@ -59,8 +68,8 @@ http.interceptors.request.use((config) => {
 
 http.interceptors.response.use(
   (response) => response.data,
-  (error) => {
-    const apiError = toApiError(error);
+  async (error) => {
+    const apiError = await toApiError(error);
 
     if (apiError.status === 401) {
       const authStore = useAuthStore();

@@ -52,7 +52,7 @@ export const deliveries: TDelivery[] = [
     delivered: 2,
     emptiesCollected: 1,
     amount: 7000,
-    paymentType: "e-wallet",
+    paymentType: "e_wallet",
     depositCollected: 20000,
     createdAt: "2026-09-26T08:05:00+08:00",
   },

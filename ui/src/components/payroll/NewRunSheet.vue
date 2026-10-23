@@ -9,7 +9,7 @@ const emit = defineEmits<{
 
 const toast = useToast();
 
-const newFrequency = ref<TPayFrequency>("semi-monthly");
+const newFrequency = ref<TPayFrequency>("semi_monthly");
 const newPeriodStart = ref(todayIso());
 const newPeriodEnd = ref(todayIso());
 

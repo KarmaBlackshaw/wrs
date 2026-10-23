@@ -28,5 +28,5 @@ export const useProductStore = defineStore("product", () => {
     return findProduct(id)?.name ?? "Unknown";
   }
 
-  return { products, isLoaded, load, refresh, findProduct, productName };
+  return { products, load, refresh, findProduct, productName };
 });

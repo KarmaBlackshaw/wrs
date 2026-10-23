@@ -6,7 +6,7 @@ export type TContainerType = {
   depositAmount: number;
 };
 
-export type TContainerMovementType = "purchased" | "to-rider" | "to-customer" | "collected" | "returned" | "damaged" | "lost" | "retired";
+export type TContainerMovementType = "purchased" | "to_rider" | "to_customer" | "collected" | "returned" | "damaged" | "lost" | "retired";
 
 export type TContainerMovement = {
   id: string;

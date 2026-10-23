@@ -19,7 +19,7 @@ export type TWalkInSale = {
 
 export type TSaleRow = {
   id: string;
-  source: "walk-in" | "delivery";
+  source: "walk_in" | "delivery";
   createdAt: string;
   customerName: string;
   items: string;

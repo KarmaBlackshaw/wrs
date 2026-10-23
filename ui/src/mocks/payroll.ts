@@ -1,9 +1,9 @@
 import type { TPayLine, TPayRun } from "@/types";
 
 export const payRuns: TPayRun[] = [
-  { id: "run-0", frequency: "semi-monthly", periodStart: "2026-08-16", periodEnd: "2026-08-31", status: "finalized" },
-  { id: "run-1", frequency: "semi-monthly", periodStart: "2026-09-01", periodEnd: "2026-09-15", status: "finalized" },
-  { id: "run-2", frequency: "semi-monthly", periodStart: "2026-09-16", periodEnd: "2026-09-30", status: "draft" },
+  { id: "run-0", frequency: "semi_monthly", periodStart: "2026-08-16", periodEnd: "2026-08-31", status: "finalized" },
+  { id: "run-1", frequency: "semi_monthly", periodStart: "2026-09-01", periodEnd: "2026-09-15", status: "finalized" },
+  { id: "run-2", frequency: "semi_monthly", periodStart: "2026-09-16", periodEnd: "2026-09-30", status: "draft" },
 ];
 
 export const payLines: TPayLine[] = [

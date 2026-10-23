@@ -11,11 +11,11 @@ export const employees: TEmployee[] = [
 ];
 
 export const payPlans: TPayPlan[] = [
-  { employeeId: "emp-1", frequency: "semi-monthly", rateBasis: "per-period", baseRate: 1500000, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-2", frequency: "semi-monthly", rateBasis: "per-period", baseRate: 45000, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-3", frequency: "daily", rateBasis: "per-day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-4", frequency: "daily", rateBasis: "per-day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-5", frequency: "semi-monthly", rateBasis: "per-period", baseRate: 40000, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-6", frequency: "semi-monthly", rateBasis: "per-period", baseRate: 38000, effectiveFrom: "2026-01-01" },
-  { employeeId: "emp-7", frequency: "daily", rateBasis: "per-day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-1", frequency: "semi_monthly", rateBasis: "per_period", baseRate: 1500000, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-2", frequency: "semi_monthly", rateBasis: "per_period", baseRate: 45000, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-3", frequency: "daily", rateBasis: "per_day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-4", frequency: "daily", rateBasis: "per_day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-5", frequency: "semi_monthly", rateBasis: "per_period", baseRate: 40000, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-6", frequency: "semi_monthly", rateBasis: "per_period", baseRate: 38000, effectiveFrom: "2026-01-01" },
+  { employeeId: "emp-7", frequency: "daily", rateBasis: "per_day", baseRate: 55000, quota: 100, incentivePerContainer: 500, effectiveFrom: "2026-01-01" },
 ];

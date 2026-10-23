@@ -31,7 +31,7 @@ type TSettingValueSchemas = typeof settingValueSchemas;
 export type TSettingKey = keyof TSettingValueSchemas;
 export type TSettingValues = { [K in TSettingKey]: z.infer<TSettingValueSchemas[K]> };
 
-const settingKeys = z.keyof(z.object(settingValueSchemas)).options;
+export const settingKeys = z.keyof(z.object(settingValueSchemas)).options;
 
 function nonEmpty<T>([first, ...rest]: T[]): [T, ...T[]] {
   if (first === undefined) {

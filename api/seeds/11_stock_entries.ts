@@ -15,6 +15,6 @@ export async function seed(knex: Knex) {
       { consumable_id: CONSUMABLE.roMembrane, qty: 3 },
       { consumable_id: CONSUMABLE.uvLamp, qty: 3 },
       { consumable_id: CONSUMABLE.sanitizer, qty: 6 },
-    ].map((s, i) => ({ id: id(6, i + 1), ...s, reason: "Opening stock", created_by: EMPLOYEE.owner, created_at }))
+    ].map((s, i) => ({ id: id(6, i + 1), ...s, kind: "restock", reason: "Opening stock", created_by: EMPLOYEE.owner, created_at }))
   );
 }

@@ -22,12 +22,12 @@ const columns = [
 
 const dateFilter = ref("");
 const paymentFilter = ref<"all" | TPaymentType>("all");
-const sourceFilter = ref<"all" | "walk-in" | "delivery">("all");
+const sourceFilter = ref<"all" | "walk_in" | "delivery">("all");
 const paymentOptions = [{ value: "all", label: "All" }, ...PAYMENT_OPTIONS];
 
 const sourceOptions: TOption<typeof sourceFilter.value>[] = [
   { value: "all", label: "All" },
-  { value: "walk-in", label: SALE_SOURCE_LABEL["walk-in"] },
+  { value: "walk_in", label: SALE_SOURCE_LABEL.walk_in },
   { value: "delivery", label: SALE_SOURCE_LABEL.delivery },
 ];
 
@@ -38,7 +38,7 @@ function saleCustomerName(customerId?: string) {
 const allRows = computed(() => {
   const walkInRows = walkInSales.map((sale): TSaleRow => ({
     id: sale.id,
-    source: "walk-in",
+    source: "walk_in",
     createdAt: sale.createdAt,
     customerName: saleCustomerName(sale.customerId),
     items: sale.lines.map((line) => `${line.qty}× ${productStore.productName(line.productId)}`).join(", "),
@@ -85,7 +85,7 @@ const voidSheetOpen = ref(false);
 const voidSummary = ref("");
 
 function openVoid(row: TSaleRow) {
-  voidSummary.value = `${row.source === "walk-in" ? "Walk-in sale" : "Delivery"}, ${row.customerName}, ${formatMoney(row.amount)}`;
+  voidSummary.value = `${row.source === "walk_in" ? "Walk-in sale" : "Delivery"}, ${row.customerName}, ${formatMoney(row.amount)}`;
   voidSheetOpen.value = true;
 }
 

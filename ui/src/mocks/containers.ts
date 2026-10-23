@@ -12,7 +12,7 @@ export const containerHoldings: TContainerHolding[] = [
 export const containerMovements: TContainerMovement[] = [
   {
     id: "mov-1",
-    type: "to-rider",
+    type: "to_rider",
     containerType: "round",
     qty: 30,
     full: true,
@@ -25,7 +25,7 @@ export const containerMovements: TContainerMovement[] = [
   },
   {
     id: "mov-2",
-    type: "to-customer",
+    type: "to_customer",
     containerType: "round",
     qty: 2,
     full: true,

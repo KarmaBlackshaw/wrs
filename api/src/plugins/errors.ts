@@ -11,6 +11,7 @@ const CLIENT_ERROR: Partial<Record<number, Pick<TApiError, "code" | "message">>>
   400: { code: "validation", message: "The request is invalid." },
   401: SESSION_EXPIRED,
   404: { code: "not_found", message: "Not found." },
+  406: { code: "validation", message: "This request format is not accepted." },
   413: { code: "validation", message: "The request is too large." },
   415: { code: "validation", message: "This content type is not supported." },
 };

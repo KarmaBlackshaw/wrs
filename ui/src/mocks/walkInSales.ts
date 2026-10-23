@@ -29,7 +29,7 @@ export const walkInSales: TWalkInSale[] = [
     borrowed: true,
     returned: false,
     amount: 9000,
-    paymentType: "e-wallet",
+    paymentType: "e_wallet",
     depositCollected: 0,
     createdAt: "2026-09-26T13:30:00+08:00",
   },

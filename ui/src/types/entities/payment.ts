@@ -1,4 +1,4 @@
-export type TPaymentType = "cash" | "e-wallet" | "credit";
+export type TPaymentType = "cash" | "e_wallet" | "credit";
 export type TPaymentSource = "trip" | "drawer";
 
 export type TPayment = {

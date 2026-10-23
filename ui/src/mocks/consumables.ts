@@ -1,8 +1,8 @@
 import type { TConsumable, TProductUsage, TStockEntry } from "@/types";
 
 export const consumables: TConsumable[] = [
-  { id: "cons-1", name: "Bottle Cap (round)", unit: "pc", kind: "per-unit", reorderLevel: 200, onHand: 850 },
-  { id: "cons-2", name: "Bottle Seal (round)", unit: "pc", kind: "per-unit", reorderLevel: 200, onHand: 150 },
+  { id: "cons-1", name: "Bottle Cap (round)", unit: "pc", kind: "per_unit", reorderLevel: 200, onHand: 850 },
+  { id: "cons-2", name: "Bottle Seal (round)", unit: "pc", kind: "per_unit", reorderLevel: 200, onHand: 150 },
   { id: "cons-3", name: "Sediment Filter", unit: "pc", kind: "maintenance", reorderLevel: 2, intervalLiters: 20000, intervalDays: 90, onHand: 3 },
   { id: "cons-4", name: "RO Membrane", unit: "pc", kind: "maintenance", reorderLevel: 1, intervalLiters: 100000, intervalDays: 365, onHand: 1 },
   { id: "cons-5", name: "UV Lamp", unit: "pc", kind: "maintenance", reorderLevel: 1, intervalDays: 180, onHand: 2 },

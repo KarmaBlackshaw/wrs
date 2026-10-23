@@ -1,5 +1,6 @@
-export type TPayFrequency = "daily" | "weekly" | "semi-monthly" | "monthly";
-export type TRateBasis = "per-day" | "per-period";
+import type { TPayFrequency, TRateBasis } from "@wrs/contract/employee";
+
+export type { TPayFrequency, TRateBasis };
 
 export type TPayPlan = {
   employeeId: string;

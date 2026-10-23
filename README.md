@@ -40,3 +40,15 @@ npm run dev     # api + ui together
 The api `Dockerfile` and the compose `api` profile do not build from a workspace subfolder yet.
 
 ## Logins
+
+Every seeded account uses the shared dev password `wrs12345`.
+
+| Username | Name | Roles |
+| --- | --- | --- |
+| `owner` | Demo Owner | owner, cashier, rider, washer, helper |
+| `cashier` | Ligaya Santos | cashier |
+| `rider1` | Mario Cruz | rider |
+| `rider2` | Ramil Bautista | rider |
+| `washer` | Boyet Reyes | washer |
+| `helper` | Fernando Dela Cruz | helper |
+| `multi` | Corazon Villanueva | cashier, rider |
