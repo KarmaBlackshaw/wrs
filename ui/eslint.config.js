@@ -51,6 +51,7 @@ const rules = {
     },
   ],
   "vue/attribute-hyphenation": ["error", "always"],
+  "@typescript-eslint/no-restricted-imports": ["error", { patterns: [{ regex: "^@wrs/contract/(?!rules/)", allowTypeImports: true }] }],
   "import-x/no-duplicates": ["error", { "prefer-inline": true }],
   "import-x/order": [
     "error",

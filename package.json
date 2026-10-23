@@ -1,0 +1,29 @@
+{
+  "name": "wrs",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "contract",
+    "api",
+    "ui"
+  ],
+  "scripts": {
+    "type-check": "npm run type-check --workspaces",
+    "lint": "npm run lint --workspaces",
+    "build": "npm run build -w ui",
+    "prepare": "husky",
+    "setup": "node scripts/setup.ts",
+    "dev": "run-p serve \"dev -w ui\"",
+    "serve": "npm run serve -w api",
+    "migrate": "npm run migrate -w api",
+    "seed": "npm run seed -w api",
+    "db:reset": "npm run db:reset -w api"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "npm-run-all2": "^9.0.3"
+  }
+}
