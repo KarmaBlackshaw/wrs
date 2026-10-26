@@ -1,34 +1,52 @@
 <script setup lang="ts">
-import type { TConsumable } from "@/types";
+import type { TConsumable } from "@wrs/contract/consumable";
 
-const open = defineModel<boolean>("open", { default: false });
+import { createStockEntry } from "@/services/stockEntry";
 
-const { consumable } = defineProps<{
-  consumable?: TConsumable;
-}>();
+const consumable = defineModel<TConsumable>("consumable");
 
-const emit = defineEmits<{ submit: [quantity: number] }>();
+const emit = defineEmits<{ submit: [] }>();
 
 const toast = useToast();
+const { run, isRunning, error } = useAction(createStockEntry, { inline: ["validation"] });
+
 const stockTakePad = ref("");
 const stockTakeReason = ref("");
 
+const open = computed({
+  get: () => consumable.value != null,
+  set: (isOpen) => {
+    if (!isOpen) {
+      consumable.value = undefined;
+    }
+  },
+});
+
 const stockTakeAmount = computed(() => Number(stockTakePad.value || "0"));
+const isReasonMissing = computed(() => stockTakeReason.value.trim().length === 0);
+const isCountMissing = computed(() => stockTakePad.value === "");
+const isBlocked = computed(() => isReasonMissing.value || isCountMissing.value);
 
 watch(open, (isOpen) => {
-  if (isOpen) {
-    stockTakePad.value = "";
+  if (isOpen && consumable.value != null) {
+    stockTakePad.value = String(consumable.value.onHand);
     stockTakeReason.value = "";
   }
 });
 
-function confirmStockTake() {
-  if (!consumable || !stockTakeReason.value.trim()) {
+async function confirmStockTake() {
+  if (consumable.value == null || isBlocked.value) {
     return;
   }
 
-  emit("submit", stockTakeAmount.value);
-  open.value = false;
+  await run({ kind: "stock_take", consumableId: consumable.value.id, counted: stockTakeAmount.value, reason: stockTakeReason.value.trim() });
+
+  if (error.value != null) {
+    return;
+  }
+
+  emit("submit");
+  consumable.value = undefined;
   toast.show("Saved");
 }
 </script>
@@ -44,8 +62,11 @@ function confirmStockTake() {
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UiButton :disabled="!stockTakeReason.trim()" @click="confirmStockTake">Save stock-take</UiButton>
+      <div class="flex flex-col gap-2">
+        <p v-if="error != null" role="alert" class="text-sm text-red-700">{{ error.message }}</p>
+        <div class="flex justify-end gap-2">
+          <UiButton :disabled="isBlocked" :loading="isRunning" @click="confirmStockTake">Save stock-take</UiButton>
+        </div>
       </div>
     </template>
   </UiBottomSheet>

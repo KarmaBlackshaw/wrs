@@ -1,3 +1,4 @@
+import type { TStockEntryKind, TStockStatus } from "@wrs/contract/consumable";
 import { z } from "zod";
 import { insertRecord } from "../lib/context/insertRecord.ts";
 import type { TCtx } from "../lib/context/makeCtx.ts";
@@ -5,14 +6,11 @@ import { domainError } from "../lib/errors/domainError.ts";
 
 type TDb = TCtx["db"];
 
-export type TStockKind = "restock" | "stock_take" | "usage" | "maintenance" | "void" | "expense_reversal";
-export type TStockStatus = "ok" | "soon" | "reorder";
-
 const usagesSchema = z.array(z.object({ consumableId: z.string(), qtyPerUnit: z.number() }));
 
-const roundQty = (value: number) => Math.round(value * 1000) / 1000;
+export const roundQty = (value: number) => Math.round(value * 1000) / 1000;
 
-type TStockEntryInput = { consumableId: string; kind: TStockKind; qty: number; reason?: string; refType?: string; refId?: string };
+type TStockEntryInput = { consumableId: string; kind: TStockEntryKind; qty: number; reason?: string; refType?: string; refId?: string };
 
 export const addStockEntry = async (ctx: TCtx, { consumableId, kind, qty, reason, refType, refId }: TStockEntryInput) => {
   const consumable = await ctx.db("consumables").where({ id: consumableId }).first("id");

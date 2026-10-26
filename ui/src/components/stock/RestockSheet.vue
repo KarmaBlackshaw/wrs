@@ -1,19 +1,28 @@
 <script setup lang="ts">
-import type { TConsumable } from "@/types";
+import type { TConsumable } from "@wrs/contract/consumable";
 
-const open = defineModel<boolean>("open", { default: false });
+import { createStockEntry } from "@/services/stockEntry";
 
-const { consumable } = defineProps<{
-  consumable?: TConsumable;
-}>();
+const consumable = defineModel<TConsumable>("consumable");
 
-const emit = defineEmits<{ submit: [quantity: number] }>();
+const emit = defineEmits<{ submit: [] }>();
 
 const toast = useToast();
+const { run, isRunning, error } = useAction(createStockEntry, { inline: ["validation"] });
+
 const restockPad = ref("");
 
+const open = computed({
+  get: () => consumable.value != null,
+  set: (isOpen) => {
+    if (!isOpen) {
+      consumable.value = undefined;
+    }
+  },
+});
+
 const restockAmount = computed(() => Number(restockPad.value || "0"));
-const suggestedTopUp = computed(() => (consumable ? Math.max(0, consumable.reorderLevel - consumable.onHand) : 0));
+const suggestedTopUp = computed(() => (consumable.value ? Math.max(0, consumable.value.reorderLevel - consumable.value.onHand) : 0));
 
 watch(open, (isOpen) => {
   if (isOpen) {
@@ -21,13 +30,19 @@ watch(open, (isOpen) => {
   }
 });
 
-function confirmRestock() {
-  if (!consumable || restockAmount.value <= 0) {
+async function confirmRestock() {
+  if (consumable.value == null || restockAmount.value <= 0) {
     return;
   }
 
-  emit("submit", restockAmount.value);
-  open.value = false;
+  await run({ kind: "restock", consumableId: consumable.value.id, qty: restockAmount.value });
+
+  if (error.value != null) {
+    return;
+  }
+
+  emit("submit");
+  consumable.value = undefined;
   toast.show("Saved");
 }
 </script>
@@ -44,8 +59,11 @@ function confirmRestock() {
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UiButton :disabled="restockAmount <= 0" @click="confirmRestock">Save restock</UiButton>
+      <div class="flex flex-col gap-2">
+        <p v-if="error != null" role="alert" class="text-sm text-red-700">{{ error.message }}</p>
+        <div class="flex justify-end gap-2">
+          <UiButton :disabled="restockAmount <= 0" :loading="isRunning" @click="confirmRestock">Save restock</UiButton>
+        </div>
       </div>
     </template>
   </UiBottomSheet>

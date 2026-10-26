@@ -4,6 +4,8 @@ import {
   IconCalculatorFill,
   IconCashRegister,
   IconCashRegisterFill,
+  IconClipboardText,
+  IconClipboardTextFill,
   IconPackage,
   IconPackageFill,
   IconTruck,
@@ -18,6 +20,7 @@ const items = [
   { label: "Trips", to: ROUTES.CASHIER.TRIPS.INDEX, icon: IconTruck, activeIcon: IconTruckFill },
   { label: "Count", to: ROUTES.CASHIER.COUNT, icon: IconCalculator, activeIcon: IconCalculatorFill },
   { label: "Stock", to: ROUTES.CASHIER.STOCK, icon: IconPackage, activeIcon: IconPackageFill },
+  { label: "Logs", to: ROUTES.STAFF.LOGS, icon: IconClipboardText, activeIcon: IconClipboardTextFill },
   { label: "Me", to: ROUTES.ME.INDEX, icon: IconUserCircle, activeIcon: IconUserCircleFill },
 ];
 </script>

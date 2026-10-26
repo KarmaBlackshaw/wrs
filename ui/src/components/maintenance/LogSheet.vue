@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import type { TConsumable } from "@/types";
+import type { TMaintenanceItem } from "@wrs/contract/maintenance";
 
-const item = defineModel<TConsumable>("item");
+import { createMaintenanceLog } from "@/services/maintenance";
+
+const item = defineModel<TMaintenanceItem>("item");
 
 const { latestMeterLiters } = defineProps<{
-  latestMeterLiters: number;
+  latestMeterLiters?: number;
 }>();
 
 const emit = defineEmits<{
-  submit: [item: TConsumable, meterLiters: number];
+  submit: [];
 }>();
 
 const toast = useToast();
+const { run, isRunning, error } = useAction(createMaintenanceLog, { inline: ["validation"] });
 
 const open = computed({
   get: () => item.value != null,
@@ -22,21 +25,46 @@ const open = computed({
   },
 });
 
-const meterReading = ref(0);
+const at = ref("");
+const meterLiters = ref<number>();
 
-watch(open, (isOpen) => {
-  if (isOpen) {
-    meterReading.value = latestMeterLiters;
+const blockReason = computed(() => {
+  if (at.value === "") {
+    return "Enter the date and time.";
   }
+
+  if (meterLiters.value == null || meterLiters.value < 0) {
+    return "Enter a meter reading of zero or more.";
+  }
+
+  return undefined;
 });
 
-function submitReplacement() {
-  if (!item.value) {
+watch(open, (isOpen) => {
+  if (!isOpen) {
     return;
   }
 
-  emit("submit", item.value, meterReading.value);
+  at.value = toManila(Date.now()).format("YYYY-MM-DDTHH:mm");
+  meterLiters.value = latestMeterLiters;
+});
 
+async function submit() {
+  if (item.value == null || meterLiters.value == null) {
+    return;
+  }
+
+  await run({
+    consumableId: item.value.consumableId,
+    at: new Date(`${at.value}:00+08:00`).toISOString(),
+    meterLiters: meterLiters.value,
+  });
+
+  if (error.value != null) {
+    return;
+  }
+
+  emit("submit");
   item.value = undefined;
   toast.show("Saved");
 }
@@ -46,12 +74,23 @@ function submitReplacement() {
   <UiBottomSheet v-model:open="open" title="Log replacement">
     <div class="flex flex-col gap-4">
       <p class="text-sm text-zinc-500">{{ item?.name }}</p>
-      <UiStepper v-model="meterReading" label="Meter reading (liters)" :min="0" :max="999999" :step="10" />
+      <UiField v-model="at" label="Replaced at" type="datetime-local" />
+      <UiNumberField v-model="meterLiters" label="Meter reading (liters)" :min="0" />
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UiButton @click="submitReplacement">Save replacement</UiButton>
+      <div class="flex flex-col gap-2">
+        <p v-if="blockReason != null" id="maintenance-block-reason" class="text-sm text-zinc-600">{{ blockReason }}</p>
+        <p v-if="error != null" role="alert" class="text-sm text-red-700">{{ error.message }}</p>
+        <div class="flex justify-end gap-2">
+          <UiButton
+            :disabled="blockReason != null"
+            :loading="isRunning"
+            :aria-describedby="blockReason != null ? 'maintenance-block-reason' : undefined"
+            @click="submit"
+            >Save replacement</UiButton
+          >
+        </div>
       </div>
     </template>
   </UiBottomSheet>

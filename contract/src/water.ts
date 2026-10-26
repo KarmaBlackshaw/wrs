@@ -28,7 +28,7 @@ export const labTestSchema = z.object({
   result: z.string(),
   fileId: idSchema,
   nextDue: isoDateSchema,
-  dueStatus: dueStatusSchema,
+  dueStatus: dueStatusSchema.nullable(),
   createdBy: idSchema,
   createdByName: z.string(),
   createdAt: isoDateTimeSchema,

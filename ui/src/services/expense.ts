@@ -15,5 +15,5 @@ export function updateExpense({ id, body }: { id: string; body: TExpenseUpdate }
 }
 
 export function deleteExpense(id: string) {
-  return http.delete<void>(`/expenses/${id}`);
+  return http.delete<TExpense>(`/expenses/${id}`);
 }
