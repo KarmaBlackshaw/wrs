@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import type { TCustomer } from "@wrs/contract/customer";
 
-import { deliveries, trips } from "@/mocks/trips";
 import { approveCustomer, getCustomer, setCustomerDepositWaiver } from "@/services/customer";
 import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Customer" } });
-
-const employeeStore = useEmployeeStore();
 
 const route = useRoute("/owner/customers/[id]");
 const toast = useToast();
@@ -50,36 +47,6 @@ const creditText = computed(() => {
 
   return creditLimit != null ? `Enabled, limit ${formatMoney(creditLimit)}` : "Enabled";
 });
-
-const historyColumns = [
-  { key: "date", label: "Date" },
-  { key: "rider", label: "Rider" },
-  { key: "delivered", label: "Delivered", align: "right" as const },
-  { key: "empties", label: "Empties", align: "right" as const },
-  { key: "amount", label: "Amount", align: "right" as const },
-  { key: "paymentType", label: "Payment" },
-];
-
-function riderNameForTrip(tripId: string) {
-  const trip = trips.find((candidate) => candidate.id === tripId);
-
-  return trip ? employeeStore.employeeName(trip.riderId) : "Rider";
-}
-
-const history = computed(() =>
-  deliveries
-    .filter((delivery) => delivery.customerId === customer.value?.id)
-    .map((delivery) => ({
-      id: delivery.id,
-      date: delivery.createdAt,
-      rider: riderNameForTrip(delivery.tripId),
-      delivered: delivery.delivered,
-      empties: delivery.emptiesCollected,
-      amount: delivery.amount,
-      paymentType: delivery.paymentType,
-    }))
-    .sort((a, b) => b.date.localeCompare(a.date))
-);
 
 const editTarget = ref<TCustomer>();
 const creditTarget = ref<TCustomer>();
@@ -205,16 +172,10 @@ async function toggleWaive() {
       </div>
     </UiCard>
 
-    <UiDataTable title="Delivery history" :columns="historyColumns" :rows="history" :row-key="(row) => row.id">
-      <template #cell-date="{ row }">{{ formatDateTime(row.date) }}</template>
-      <template #cell-amount="{ row }">
-        <UiMoneyText :centavos="row.amount" />
-      </template>
-      <template #cell-paymentType="{ row }">{{ PAYMENT_LABEL[row.paymentType] }}</template>
-      <template #empty>
-        <UiEmptyState title="No deliveries yet" />
-      </template>
-    </UiDataTable>
+    <CustomerHistoryDeliveries :customer-id="customer.id" />
+    <CustomerHistoryPayments :customer-id="customer.id" />
+    <CustomerHistoryDeposits :customer-id="customer.id" />
+    <CustomerHistoryMovements :customer-id="customer.id" />
 
     <CustomerHistoryOwnership :key="ownershipKey" :customer-id="customer.id" />
 

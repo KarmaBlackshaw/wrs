@@ -9,19 +9,22 @@ const titleId = useId();
 
 const dialogRef = useTemplateRef<HTMLDialogElement>("dialog");
 
-watch(open, (value) => {
+function syncDialog() {
   const dialog = dialogRef.value;
 
   if (!dialog) {
     return;
   }
 
-  if (value && !dialog.open) {
+  if (open.value && !dialog.open) {
     dialog.showModal();
-  } else if (!value && dialog.open) {
+  } else if (!open.value && dialog.open) {
     dialog.close();
   }
-});
+}
+
+watch(open, syncDialog);
+onMounted(syncDialog);
 
 function onClose() {
   open.value = false;

@@ -1,8 +1,9 @@
 import type { Knex } from "knex";
+import { historyWindow } from "./ids/history.ts";
 import { EMPLOYEE, ID_GROUP, id } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
-  const created_at = new Date();
+  const { masterDataAt: created_at } = historyWindow();
 
   const customers = [
     {
@@ -88,7 +89,7 @@ export async function seed(knex: Knex) {
       credit_limit: 200000,
     },
     { first_name: "Teresita", last_name: "Navarro", address: "17 Adelfa St., Brgy. Poblacion, Cainta, Rizal", phone: "09170000015" },
-  ].map((customer, i) => ({ id: id(ID_GROUP.customer, i + 1), rider_id: null, ...customer, created_at }));
+  ].map((customer, i) => ({ id: id(ID_GROUP.customer, i + 1), rider_id: null, ...customer, created_at, updated_at: created_at }));
 
   await knex("customers").insert(customers);
 
@@ -100,6 +101,7 @@ export async function seed(knex: Knex) {
       event: "created",
       by_employee_id: EMPLOYEE.owner,
       created_at,
+      updated_at: created_at,
     }))
   );
 }

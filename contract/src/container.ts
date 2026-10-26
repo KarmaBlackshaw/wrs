@@ -2,7 +2,7 @@ import { z } from "zod";
 import { dateRangeQuerySchema, idSchema, isoDateSchema, isoDateTimeSchema, moneySchema, pageQuerySchema } from "./common.ts";
 
 export const containerTypeCodeSchema = z.enum(["round", "slim"]);
-export const movementTypeSchema = z.enum(["purchased", "to_rider", "to_customer", "collected", "returned", "damaged", "lost", "retired"]);
+export const movementTypeSchema = z.enum(["purchased", "to_rider", "to_customer", "collected", "returned", "damaged", "lost", "retired", "filled"]);
 export const locationKindSchema = z.enum(["station", "rider", "customer", "external"]);
 export const manualMovementTypeSchema = z.enum(["damaged", "lost", "purchased", "retired"]);
 
@@ -81,6 +81,8 @@ export const containerCountSchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 
+export const containerCountListQuerySchema = pageQuerySchema.merge(dateRangeQuerySchema);
+
 export const containerCountBodySchema = z.object({
   counts: z.array(z.object({ containerType: containerTypeCodeSchema, full: z.number().int().min(0), empty: z.number().int().min(0) })).min(1),
 });
@@ -108,6 +110,7 @@ export type TMovementCreate = z.infer<typeof movementCreateSchema>;
 export type THolding = z.infer<typeof holdingSchema>;
 export type THoldingListQuery = z.infer<typeof holdingListQuerySchema>;
 export type TContainerCount = z.infer<typeof containerCountSchema>;
+export type TContainerCountListQuery = z.infer<typeof containerCountListQuerySchema>;
 export type TContainerCountBody = z.infer<typeof containerCountBodySchema>;
 export type TContainerReturnBody = z.infer<typeof containerReturnBodySchema>;
 export type TContainerReturnQuote = z.infer<typeof containerReturnQuoteSchema>;

@@ -2,6 +2,7 @@ import type { TPage } from "@wrs/contract/common";
 import type {
   TContainerCount,
   TContainerCountBody,
+  TContainerCountListQuery,
   TContainerMovement,
   THolding,
   THoldingListQuery,
@@ -23,8 +24,8 @@ export function createMovement(body: TMovementCreate) {
   return http.post<TContainerMovement>("/container-movements", body);
 }
 
-export function listCounts(signal?: AbortSignal) {
-  return http.get<TContainerCount[]>("/container-counts", { signal });
+export function listCounts(query: TContainerCountListQuery, signal?: AbortSignal) {
+  return http.get<TPage<TContainerCount>>("/container-counts", { params: query, signal });
 }
 
 export function createCounts(body: TContainerCountBody) {

@@ -1,90 +1,81 @@
 <script setup lang="ts">
-import { drawerSessions } from "@/mocks/drawerSessions";
-import { walkInSales } from "@/mocks/walkInSales";
-import { payments } from "@/mocks/payments";
-import { trips } from "@/mocks/trips";
-import { expenses } from "@/mocks/expenses";
-import { ROUTES, type TLocalExpense, type TReportColumn } from "@/types";
+import type { TExpense } from "@wrs/contract/expense";
+import { getCurrentDrawer } from "@/services/drawer";
+import { ROUTES, type TReportColumn } from "@/types";
 
 definePage({ meta: { title: "Drawer" } });
 
-const latestSession = drawerSessions.at(-1) ?? null;
-const sessionDay = latestSession ? new Date(latestSession.openedAt) : new Date();
-
-const isOpen = ref(latestSession != null && latestSession.closedAt == null);
-const openingCash = ref(latestSession?.openingCash ?? 0);
-
-const localExpenses = ref<TLocalExpense[]>([]);
-
 const expenseColumns: TReportColumn[] = [
-  { key: "category", label: "Category" },
+  { key: "categoryName", label: "Category" },
   { key: "note", label: "Note" },
   { key: "amount", label: "Amount", align: "right" },
 ];
+
+const { data: drawer, isLoading, error, reload } = useResource(getCurrentDrawer);
 
 const openSheetOpen = ref(false);
 const expenseSheetOpen = ref(false);
 const closeSheetOpen = ref(false);
 
-const suggestedOpeningCash = latestSession?.openingCash ?? 0;
+const isOpen = computed(() => drawer.value != null);
+const subtitle = computed(() => (drawer.value != null ? `Opened ${formatDateTime(drawer.value.session.openedAt)}` : "Drawer is closed"));
+const isDrawerReady = computed(() => drawer.value !== undefined);
 
-const walkInCash = computed(() =>
-  walkInSales.filter((sale) => sale.paymentType === "cash" && isSameManilaDay(sale.createdAt, sessionDay)).reduce((sum, sale) => sum + sale.amount, 0)
-);
+const stats = computed(() => {
+  const breakdown = drawer.value?.breakdown;
 
-const collections = computed(() =>
-  payments.filter((payment) => payment.source === "drawer" && isSameManilaDay(payment.createdAt, sessionDay)).reduce((sum, payment) => sum + payment.amount, 0)
-);
+  if (breakdown == null) {
+    return [];
+  }
 
-const riderRemittances = computed(() =>
-  trips.filter((trip) => trip.returnedAt && isSameManilaDay(trip.returnedAt, sessionDay)).reduce((sum, trip) => sum + (trip.cashRemitted ?? 0), 0)
-);
+  return [
+    { label: "Opening cash", centavos: breakdown.opening },
+    { label: "Walk-in cash", centavos: breakdown.cashWalkIns },
+    { label: "Deposits", centavos: breakdown.cashDeposits },
+    { label: "Collections", centavos: breakdown.cashPayments },
+    { label: "Rider remittances", centavos: breakdown.riderRemittances },
+    { label: "Drawer expenses", centavos: breakdown.drawerExpenses, tone: "warn" as const },
+    { label: "Deposit refunds", centavos: breakdown.depositRefunds, tone: "warn" as const },
+    { label: "Void refunds", centavos: breakdown.voidRefunds, tone: "warn" as const },
+    { label: "Expected cash", centavos: breakdown.expected },
+  ];
+});
 
-const seededExpenses = computed(() =>
-  expenses.filter((expense) => expense.source === "drawer" && isSameManilaDay(expense.date, sessionDay)).reduce((sum, expense) => sum + expense.amount, 0)
-);
-
-const localExpenseTotal = computed(() => localExpenses.value.reduce((sum, expense) => sum + expense.amount, 0));
-
-const drawerExpensesTotal = computed(() => seededExpenses.value + localExpenseTotal.value);
-
-const expectedCash = computed(() => openingCash.value + walkInCash.value + collections.value + riderRemittances.value - drawerExpensesTotal.value);
-
-function confirmOpen(cash: number) {
-  openingCash.value = cash;
-  isOpen.value = true;
-}
-
-function confirmExpense(expense: Omit<TLocalExpense, "id">) {
-  localExpenses.value.push({ id: `local-exp-${Date.now()}`, ...expense });
+function expenseKey(expense: TExpense) {
+  return expense.id;
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
-    <UiPageHeader title="Drawer session" :subtitle="isOpen ? `Opened ${formatDateTime(latestSession?.openedAt ?? sessionDay)}` : 'Drawer is closed'">
+    <UiPageHeader title="Drawer session" :subtitle="subtitle">
       <template #actions>
-        <UiStatusPill :tone="isOpen ? 'ok' : 'neutral'">{{ isOpen ? "Open" : "Closed" }}</UiStatusPill>
-        <template v-if="isOpen">
-          <UiButton variant="secondary" :to="ROUTES.CASHIER.COLLECT">Collect payment</UiButton>
-          <UiButton variant="secondary" :to="ROUTES.CASHIER.RETURN_CONTAINER">Return container</UiButton>
-          <UiButton variant="secondary" @click="expenseSheetOpen = true">Record expense</UiButton>
-          <UiButton @click="closeSheetOpen = true">Close with count</UiButton>
+        <template v-if="isDrawerReady">
+          <UiStatusPill :tone="isOpen ? 'ok' : 'neutral'">{{ isOpen ? "Open" : "Closed" }}</UiStatusPill>
+          <template v-if="isOpen">
+            <UiButton variant="secondary" :to="ROUTES.CASHIER.COLLECT">Collect payment</UiButton>
+            <UiButton variant="secondary" :to="ROUTES.CASHIER.RETURN_CONTAINER">Return container</UiButton>
+            <UiButton variant="secondary" @click="expenseSheetOpen = true">Record expense</UiButton>
+            <UiButton @click="closeSheetOpen = true">Close with count</UiButton>
+          </template>
         </template>
       </template>
     </UiPageHeader>
 
-    <template v-if="isOpen">
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-6">
-        <UiStatCard label="Opening cash"><UiMoneyText :centavos="openingCash" size="lg" /></UiStatCard>
-        <UiStatCard label="Walk-in cash"><UiMoneyText :centavos="walkInCash" size="lg" /></UiStatCard>
-        <UiStatCard label="Collections"><UiMoneyText :centavos="collections" size="lg" /></UiStatCard>
-        <UiStatCard label="Rider remittances"><UiMoneyText :centavos="riderRemittances" size="lg" /></UiStatCard>
-        <UiStatCard label="Drawer expenses" tone="warn"><UiMoneyText :centavos="drawerExpensesTotal" size="lg" tone="warn" /></UiStatCard>
-        <UiStatCard label="Expected cash"><UiMoneyText :centavos="expectedCash" size="lg" /></UiStatCard>
+    <UiEmptyState v-if="error != null" title="Couldn't load" :description="error.message">
+      <template #action>
+        <UiButton variant="secondary" @click="reload">Retry</UiButton>
+      </template>
+    </UiEmptyState>
+
+    <template v-else-if="drawer != null">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-3 2xl:grid-cols-5">
+        <UiStatCard v-for="stat in stats" :key="stat.label" :label="stat.label" :tone="stat.tone">
+          <UiMoneyText :centavos="stat.centavos" size="lg" :tone="stat.tone" />
+        </UiStatCard>
       </div>
 
-      <UiDataTable title="Drawer expenses this session" :columns="expenseColumns" :rows="localExpenses" :row-key="(row) => row.id">
+      <UiDataTable title="Drawer expenses this session" :columns="expenseColumns" :rows="drawer.expenses" :row-key="expenseKey" :is-loading="isLoading">
         <template #cell-amount="{ row }">
           <UiMoneyText :centavos="row.amount" />
         </template>
@@ -94,14 +85,14 @@ function confirmExpense(expense: Omit<TLocalExpense, "id">) {
       </UiDataTable>
     </template>
 
-    <UiEmptyState v-else title="Drawer is closed" description="Open the drawer with a starting cash count to begin the day.">
+    <UiEmptyState v-else-if="drawer === null" title="Drawer is closed" description="Open the drawer with a starting cash count to begin the day.">
       <template #action>
         <UiButton @click="openSheetOpen = true">Open drawer</UiButton>
       </template>
     </UiEmptyState>
 
-    <DrawerOpenSheet v-model:open="openSheetOpen" :suggested-opening-cash="suggestedOpeningCash" @submit="confirmOpen" />
-    <DrawerExpenseSheet v-model:open="expenseSheetOpen" @submit="confirmExpense" />
-    <DrawerCloseSheet v-model:open="closeSheetOpen" :expected-cash="expectedCash" @submit="isOpen = false" />
+    <DrawerOpenSheet v-model:open="openSheetOpen" @submit="reload" />
+    <DrawerExpenseSheet v-model:open="expenseSheetOpen" @submit="reload" />
+    <DrawerCloseSheet v-model:open="closeSheetOpen" :expected="drawer?.breakdown.expected ?? 0" @submit="reload" />
   </div>
 </template>

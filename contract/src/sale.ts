@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { dateRangeQuerySchema, errorCodeSchema, idSchema, isoDateTimeSchema, moneySchema, pageOf, pageQuerySchema } from "./common.ts";
 import { depositSubBodySchema } from "./deposit.ts";
+import { paymentMethodSchema } from "./payment.ts";
 
 export const paymentTypeSchema = z.enum(["cash", "e_wallet", "credit"]);
 export const saleSourceSchema = z.enum(["delivery", "walk_in"]);
@@ -36,11 +37,14 @@ export const walkInSaleBodySchema = z.object({
   deposit: depositSubBodySchema.optional(),
 });
 
+export const walkInSaleQuoteBodySchema = walkInSaleBodySchema.extend({ depositMethod: paymentMethodSchema.optional() });
+
 export const walkInSaleQuoteSchema = z.object({
   lines: z.array(walkInSaleLineSchema.extend({ lineTotal: moneySchema })),
   amount: moneySchema,
   depositDue: moneySchema,
-  blockReason: errorCodeSchema.nullable(),
+  depositLines: z.array(depositSubBodySchema.shape.lines.element),
+  blockReason: z.object({ code: errorCodeSchema, message: z.string() }).nullable(),
 });
 
 export const saleRowSchema = z.object({
@@ -69,6 +73,7 @@ export type TVoidStatus = z.infer<typeof voidStatusSchema>;
 export type TWalkInSaleLine = z.infer<typeof walkInSaleLineSchema>;
 export type TWalkInSale = z.infer<typeof walkInSaleSchema>;
 export type TWalkInSaleBody = z.infer<typeof walkInSaleBodySchema>;
+export type TWalkInSaleQuoteBody = z.infer<typeof walkInSaleQuoteBodySchema>;
 export type TWalkInSaleQuote = z.infer<typeof walkInSaleQuoteSchema>;
 export type TSaleRow = z.infer<typeof saleRowSchema>;
 export type TSalesListQuery = z.infer<typeof salesListQuerySchema>;

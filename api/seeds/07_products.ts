@@ -1,8 +1,9 @@
 import type { Knex } from "knex";
+import { historyWindow } from "./ids/history.ts";
 import { PRODUCT } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
-  const created_at = new Date();
+  const { masterDataAt: created_at } = historyWindow();
 
   await knex("products").del();
 
@@ -14,6 +15,6 @@ export async function seed(knex: Knex) {
       { id: PRODUCT.slimContainer, name: "Slim Container (new)", kind: "container", container_type: "slim" },
       { id: PRODUCT.bottled, name: "Bottled Water 500mL", kind: "bottled" },
       { id: PRODUCT.ice, name: "Ice, per bag", kind: "other" },
-    ].map((p) => ({ ...p, created_at }))
+    ].map((p) => ({ ...p, created_at, updated_at: created_at }))
   );
 }

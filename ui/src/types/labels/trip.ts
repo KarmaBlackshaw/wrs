@@ -1,5 +1,6 @@
 import type { TTripStatus } from "@wrs/contract/trip";
 import type { TTone } from "@/types/ui";
+import type { TOption } from "@/types";
 
 export const TRIP_STATUS_TONE: Record<TTripStatus, TTone> = {
   open: "info",
@@ -14,3 +15,11 @@ export const TRIP_STATUS_LABEL: Record<TTripStatus, string> = {
   returned: "Returned",
   reconciled: "Reconciled",
 };
+
+export const TRIP_STATUS_FILTER_OPTIONS: TOption<"all" | TTripStatus>[] = [
+  { value: "all", label: "All statuses" },
+  { value: "open", label: TRIP_STATUS_LABEL.open },
+  { value: "returning", label: TRIP_STATUS_LABEL.returning },
+  { value: "returned", label: TRIP_STATUS_LABEL.returned },
+  { value: "reconciled", label: TRIP_STATUS_LABEL.reconciled },
+];

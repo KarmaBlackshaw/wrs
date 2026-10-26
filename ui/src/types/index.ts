@@ -20,6 +20,7 @@ export * from "./entities/water";
 export * from "./labels/aging";
 export * from "./labels/container";
 export * from "./labels/customer";
+export * from "./labels/deposit";
 export * from "./labels/loan";
 export * from "./labels/payment";
 export * from "./labels/payroll";

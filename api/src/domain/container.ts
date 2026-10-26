@@ -2,6 +2,7 @@ import { holdingSchema, type TContainerTypeCode, type TLocationKind, type TMovem
 import { z } from "zod";
 import { insertRecord } from "../lib/context/insertRecord.ts";
 import type { TCtx } from "../lib/context/makeCtx.ts";
+import { domainError } from "../lib/errors/domainError.ts";
 
 type TDb = TCtx["db"];
 
@@ -41,11 +42,13 @@ export const move = (ctx: TCtx, { containerType, qty, isFull, from, to, type, re
 
 export const holdingsQuery = (db: TDb, { at }: { at?: Date } = {}) => {
   const side = (column: "to_location" | "from_location", sign: 1 | -1) => {
+    const fullColumn = sign === -1 ? "case when type = 'filled' then false else `full` end as `full`" : "full";
+
     const query = db("containerMovements").select(
       db.raw(`${column} as location_kind`),
       db.raw(`case ${column} when 'rider' then rider_id when 'customer' then customer_id end as location_id`),
       "containerType",
-      "full",
+      db.raw(fullColumn),
       db.raw(`${sign} * qty as qty`)
     );
 
@@ -74,4 +77,45 @@ export const stationHoldings = async (ctx: TCtx, at?: Date) => {
     .orderBy("t.code");
 
   return stationHoldingsSchema.parse(rows);
+};
+
+export const lockContainerType = async (ctx: TCtx, code: TContainerTypeCode) => {
+  const row = await ctx.db("containerTypes").where({ code }).forUpdate().first("code");
+
+  if (!row) {
+    throw domainError({ statusCode: 422, code: "reference.not_found", message: `Container type ${code} does not exist.`, details: { field: "containerType" } });
+  }
+};
+
+type TDrawFullInput = {
+  containerType: TContainerTypeCode;
+  qty: number;
+  to: TLocation;
+  type: TMovementType;
+  refType: string;
+  refId: string;
+};
+
+export const drawFull = async (ctx: TCtx, { containerType, qty, to, type, refType, refId }: TDrawFullInput): Promise<void> => {
+  await lockContainerType(ctx, containerType);
+
+  const holdings = await stationHoldings(ctx);
+  const { full = 0, empty = 0 } = holdings.find((holding) => holding.containerType === containerType) ?? {};
+
+  if (qty > full + empty) {
+    throw domainError({
+      statusCode: 422,
+      code: "container.station_short",
+      message: `Station holds only ${full + empty} ${containerType} container(s).`,
+      details: { containerType, available: full + empty },
+    });
+  }
+
+  const station: TLocation = { kind: "station", id: null };
+
+  if (qty > full) {
+    await move(ctx, { containerType, qty: qty - full, isFull: true, from: station, to: station, type: "filled", refType, refId });
+  }
+
+  await move(ctx, { containerType, qty, isFull: true, from: station, to, type, refType, refId });
 };
