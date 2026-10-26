@@ -1,0 +1,23 @@
+{
+  "name": "@wrs/contract",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "type-check": "tsc",
+    "lint": "eslint . --max-warnings=0 --fix"
+  },
+  "lint-staged": {
+    "**/*.{js,ts}": [
+      "eslint --max-warnings=0 --fix --no-warn-ignored",
+      "prettier --write --ignore-unknown"
+    ],
+    "**/*.{json,md}": "prettier --write --ignore-unknown"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}

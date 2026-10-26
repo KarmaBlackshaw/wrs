@@ -1,0 +1,46 @@
+import type { TWalkInSale } from "@/types";
+
+export const walkInSales: TWalkInSale[] = [
+  {
+    id: "wi-1",
+    lines: [{ productId: "prod-1", qty: 2 }],
+    borrowed: false,
+    returned: false,
+    amount: 7000,
+    paymentType: "cash",
+    depositCollected: 0,
+    createdAt: "2026-09-27T08:10:00+08:00",
+  },
+  {
+    id: "wi-2",
+    customerId: "cust-9",
+    lines: [{ productId: "prod-1", qty: 1 }],
+    borrowed: true,
+    returned: false,
+    amount: 3500,
+    paymentType: "cash",
+    depositCollected: 20000,
+    createdAt: "2026-09-27T09:00:00+08:00",
+  },
+  {
+    id: "wi-3",
+    customerId: "cust-13",
+    lines: [{ productId: "prod-2", qty: 3 }],
+    borrowed: true,
+    returned: false,
+    amount: 9000,
+    paymentType: "e_wallet",
+    depositCollected: 0,
+    createdAt: "2026-09-26T13:30:00+08:00",
+  },
+  {
+    id: "wi-4",
+    lines: [{ productId: "prod-5", qty: 6 }],
+    borrowed: false,
+    returned: false,
+    amount: 9000,
+    paymentType: "cash",
+    depositCollected: 0,
+    createdAt: "2026-09-27T10:15:00+08:00",
+  },
+];

@@ -1,25 +1,8 @@
-logs
-*.log
-npm-debug.log*
-
 node_modules
-dist
-dist-ssr
-*.local
-*.tsbuildinfo
-
-.vscode/*
-!.vscode/extensions.json
-.idea
 .DS_Store
-
 .env
-
-# Auto-generated type declarations
-auto-import.json
-auto-imports.d.ts
-components.d.ts
-typed-router.d.ts
-.playwright-mcp
-# Claude local memory pointer (machine-specific Obsidian paths)
+.scratch/
+.playwright-mcp/
+*.local
 CLAUDE.local.md
+.gstack/
