@@ -1,12 +1,10 @@
-import type { TContainerTypeCode } from "@wrs/contract/container";
+import { CONTAINER_TYPE_LABEL } from "@wrs/contract/labels/container";
 import { listCounts } from "../container-log.ts";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { allPages } from "./allPages.ts";
 import type { TReportDefinition } from "./types.ts";
 
 type TRange = Parameters<TReportDefinition["build"]>[1];
-
-const TYPE_LABEL: Record<TContainerTypeCode, string> = { round: "Round", slim: "Slim" };
 
 const countsIn = (ctx: TCtx, range: TRange) => allPages((page) => listCounts(ctx, { ...range, ...page }));
 
@@ -27,7 +25,7 @@ export const containerCountVarianceReport: TReportDefinition = {
       ],
       rows: counts.map(({ date, containerType, full, expectedFull, varianceFull, empty, expectedEmpty, varianceEmpty }) => ({
         date,
-        type: TYPE_LABEL[containerType],
+        type: CONTAINER_TYPE_LABEL[containerType],
         countedFull: full,
         expectedFull,
         varianceFull,

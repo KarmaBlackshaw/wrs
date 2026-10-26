@@ -97,7 +97,6 @@ export { default as RiderCustomerList } from "./rider/CustomerList.vue";
 export { default as SettingEditSheet } from "./setting/EditSheet.vue";
 export { default as SettingHistorySheet } from "./setting/HistorySheet.vue";
 export { default as StockRestockSheet } from "./stock/RestockSheet.vue";
-export { default as StockTakeSheet } from "./stock/TakeSheet.vue";
 export { default as SyncPendingSheet } from "./sync/PendingSheet.vue";
 export { default as SyncStatusPill } from "./sync/StatusPill.vue";
 export { default as TripShortageSheet } from "./trip/ShortageSheet.vue";

@@ -1,4 +1,4 @@
-import type { TMaintenanceStatus } from "@wrs/contract/maintenance";
+import { MAINTENANCE_STATUS_LABEL } from "@wrs/contract/labels/maintenance";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { manilaDayBounds } from "../../lib/dates/manilaDayBounds.ts";
 import { listMaintenance } from "../maintenance.ts";
@@ -9,8 +9,6 @@ const maintenanceAsOf = (ctx: TCtx, to: string) => {
 
   return listMaintenance({ ...ctx, now: new Date(Math.min(end.getTime() - 1, ctx.now.getTime())) });
 };
-
-const STATUS_LABEL: Record<TMaintenanceStatus, string> = { ok: "OK", due: "Due soon", overdue: "Overdue" };
 
 export const maintenanceDueReport: TReportDefinition = {
   build: async (ctx, { to }) => {
@@ -29,7 +27,7 @@ export const maintenanceDueReport: TReportDefinition = {
         lastReplaced: lastReplacedAt,
         litersSince,
         daysSince,
-        status: STATUS_LABEL[status],
+        status: MAINTENANCE_STATUS_LABEL[status],
       })),
     };
   },

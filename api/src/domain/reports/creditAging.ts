@@ -1,4 +1,5 @@
 import type { TAgingBucket } from "@wrs/contract/customer";
+import { AGING_LABEL } from "@wrs/contract/labels/customer";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { manilaDayBounds } from "../../lib/dates/manilaDayBounds.ts";
 import { fullNameSql } from "../../lib/sql/fullNameSql.ts";
@@ -8,8 +9,6 @@ import type { TReportDefinition } from "./types.ts";
 type TAgingRow = { customer: string; rider: string | null; bucket: TAgingBucket; balance: number };
 
 const BUCKETS: TAgingBucket[] = ["current", "7", "15", "30+"];
-
-const BUCKET_LABEL: Record<TAgingBucket, string> = { current: "Current", "7": "7 days", "15": "15 days", "30+": "30+ days" };
 
 const agingAsOf = async ({ db }: TCtx, to: string) => {
   const asOf = new Date(manilaDayBounds(to).end.getTime() - 1);
@@ -40,7 +39,7 @@ export const creditAgingReport: TReportDefinition = {
       { key: "bucket", label: "Bucket", align: "left", format: "text" },
       { key: "balance", label: "Balance", align: "right", format: "money" },
     ],
-    rows: (await agingAsOf(ctx, to)).map((row) => ({ ...row, bucket: BUCKET_LABEL[row.bucket] })),
+    rows: (await agingAsOf(ctx, to)).map((row) => ({ ...row, bucket: AGING_LABEL[row.bucket] })),
   }),
   summarize: async (ctx, { to }) => {
     const rows = await agingAsOf(ctx, to);

@@ -84,10 +84,6 @@ const isUnavailable = computed(() => error.value?.code === "payroll.run_not_fina
             <UiMoneyText :centavos="payslip.creditHeld" />
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-base text-zinc-500">Credit recovered</span>
-            <UiMoneyText :centavos="payslip.creditRecovered" tone="ok" />
-          </div>
-          <div class="flex items-center justify-between">
             <span class="text-base text-zinc-500">Carried over to next run</span>
             <UiMoneyText :centavos="payslip.carriedOver" />
           </div>

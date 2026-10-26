@@ -60,6 +60,6 @@ function stockActions(consumable: TConsumable): TRowAction[] {
     </UiDataTable>
 
     <StockRestockSheet v-model:consumable="restocking" @submit="reload" />
-    <StockTakeSheet v-model:consumable="counting" @submit="reload" />
+    <ConsumableStockTakeSheet v-model:consumable="counting" @submit="reload" />
   </div>
 </template>

@@ -1,12 +1,9 @@
+import { PAYMENT_LABEL } from "@wrs/contract/labels/sale";
 import type { TPaymentMethod } from "@wrs/contract/payment";
 import type { TPaymentType } from "@wrs/contract/sale";
 import type { TOption } from "@/types/ui";
 
-export const PAYMENT_LABEL: Record<TPaymentType, string> = {
-  cash: "Cash",
-  e_wallet: "E-wallet",
-  credit: "Credit",
-};
+export { PAYMENT_LABEL };
 
 export const PAYMENT_OPTIONS: TOption<TPaymentType>[] = [
   { value: "cash", label: PAYMENT_LABEL.cash },

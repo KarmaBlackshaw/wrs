@@ -1,11 +1,9 @@
-import type { TStockStatus } from "@wrs/contract/consumable";
+import { STOCK_STATUS_LABEL } from "@wrs/contract/labels/consumable";
 import { z } from "zod";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { manilaDayBounds } from "../../lib/dates/manilaDayBounds.ts";
 import { stockOnHandQuery, stockStatus } from "../stock.ts";
 import type { TReportDefinition } from "./types.ts";
-
-const STATUS_LABEL: Record<TStockStatus, string> = { ok: "OK", soon: "Reorder soon", reorder: "Reorder now" };
 
 const stockRowsSchema = z.array(z.object({ name: z.string(), unit: z.string(), reorderLevel: z.number(), onHand: z.number() }));
 
@@ -32,7 +30,12 @@ export const stockReorderReport: TReportDefinition = {
         { key: "reorderLevel", label: "Reorder level", align: "right", format: "number" },
         { key: "status", label: "Status", align: "left", format: "text" },
       ],
-      rows: stock.map(({ name, unit, onHand, reorderLevel, status }) => ({ item: `${name} (${unit})`, onHand, reorderLevel, status: STATUS_LABEL[status] })),
+      rows: stock.map(({ name, unit, onHand, reorderLevel, status }) => ({
+        item: `${name} (${unit})`,
+        onHand,
+        reorderLevel,
+        status: STOCK_STATUS_LABEL[status],
+      })),
     };
   },
   summarize: async (ctx, { to }) => {

@@ -228,10 +228,6 @@ function leaveText({ paidLeaveDays, unpaidLeaveDays, delivered }: TPayLine) {
               <dt class="max-w-48 whitespace-normal">{{ deductionLabel(deduction) }}</dt>
               <dd class="text-right"><UiMoneyText :centavos="deduction.amount" size="sm" tone="danger" /></dd>
             </template>
-            <template v-if="row.creditRecovered > 0">
-              <dt>Credit recovered</dt>
-              <dd class="text-right"><UiMoneyText :centavos="row.creditRecovered" size="sm" tone="ok" /></dd>
-            </template>
             <template v-if="row.carriedOver > 0">
               <dt class="text-amber-700">Carried over to next run</dt>
               <dd class="text-right"><UiMoneyText :centavos="row.carriedOver" size="sm" tone="warn" /></dd>

@@ -1,10 +1,8 @@
-import type { TContainerTypeCode } from "@wrs/contract/container";
+import { CONTAINER_TYPE_LABEL } from "@wrs/contract/labels/container";
 import { listHoldings } from "../container-log.ts";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { allPages } from "./allPages.ts";
 import type { TReportDefinition } from "./types.ts";
-
-const TYPE_LABEL: Record<TContainerTypeCode, string> = { round: "Round", slim: "Slim" };
 
 const holdingsAt = (ctx: TCtx, at: string) => allPages((page) => listHoldings(ctx, { at, ...page }));
 
@@ -25,7 +23,7 @@ export const containersHeldReport: TReportDefinition = {
 
         return {
           location: label,
-          type: TYPE_LABEL[containerType],
+          type: CONTAINER_TYPE_LABEL[containerType],
           full: isCustomer ? null : full,
           empty: isCustomer ? null : empty,
           total: full + empty,

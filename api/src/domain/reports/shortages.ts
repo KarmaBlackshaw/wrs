@@ -1,3 +1,4 @@
+import { SHORTAGE_SOURCE_LABEL } from "@wrs/contract/labels/shortage";
 import type { TReportColumn } from "@wrs/contract/report";
 import type { TShortage } from "@wrs/contract/shortage";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
@@ -10,8 +11,6 @@ import type { TReportDefinition } from "./types.ts";
 type TRange = Parameters<TReportDefinition["build"]>[1];
 
 type TShortageRow = Pick<TShortage, "employeeName" | "source" | "cash" | "containers" | "excludedRunId" | "deductedRunId" | "dismissedAt" | "createdAt">;
-
-const SOURCE_LABEL: Record<TShortage["source"], string> = { trip: "Trip", drawer: "Drawer" };
 
 const COLUMNS: TReportColumn[] = [
   { key: "date", label: "Date", align: "left", format: "date" },
@@ -61,7 +60,7 @@ export const shortagesReport: TReportDefinition = {
       rows: rows.map((row) => ({
         date: manilaDate(new Date(row.createdAt)),
         employee: row.employeeName,
-        source: SOURCE_LABEL[row.source],
+        source: SHORTAGE_SOURCE_LABEL[row.source],
         cash: row.cash,
         containers: row.containers,
         status: statusLabel(row),

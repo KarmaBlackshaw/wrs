@@ -1,3 +1,4 @@
+import { TRIP_STATUS_LABEL } from "@wrs/contract/labels/trip";
 import type { TReportColumn } from "@wrs/contract/report";
 import type { TTripStatus } from "@wrs/contract/trip";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
@@ -19,13 +20,6 @@ type TTripRow = {
   returnedEmpty: number;
   expectedCash: number;
   cashRemitted: number | null;
-};
-
-const STATUS_LABEL: Record<TTripStatus, string> = {
-  open: "Open",
-  returning: "Returning",
-  returned: "Returned",
-  reconciled: "Reconciled",
 };
 
 const COLUMNS: TReportColumn[] = [
@@ -89,7 +83,7 @@ export const riderReconciliationReport: TReportDefinition = {
       rows: rows.map((row) => ({
         date: manilaDate(new Date(row.loadedAt)),
         rider: row.riderName,
-        status: STATUS_LABEL[row.status],
+        status: TRIP_STATUS_LABEL[row.status],
         loaded: row.loaded,
         delivered: row.delivered,
         returnedFull: row.returnedFull,

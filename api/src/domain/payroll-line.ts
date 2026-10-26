@@ -1,4 +1,5 @@
 import type { TPayPlan } from "@wrs/contract/employee";
+import { SHORTAGE_SOURCE_LABEL } from "@wrs/contract/labels/shortage";
 import { payLineDeductionSchema, type TPayLine, type TPayLineAdjustment, type TPayLineDeduction, type TPayRun, type TPayslip } from "@wrs/contract/payroll";
 import { z } from "zod";
 import type { TCtx } from "../lib/context/makeCtx.ts";
@@ -23,8 +24,6 @@ const MANILA_LOADED_DAY = "date(convert_tz(t.loaded_at, '+00:00', '+08:00'))";
 const deductionsSchema = z.array(payLineDeductionSchema.extend({ note: z.string().nullable().default(null) }));
 
 const manilaDayMonth = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Manila", day: "numeric", month: "short" });
-
-const SHORTAGE_SOURCE_LABEL = { trip: "Trip", drawer: "Drawer" } as const;
 
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
 

@@ -1,6 +1,7 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
   "include": ["env.d.ts", "auto-imports.d.ts", "components.d.ts", "typed-router.d.ts", "src/**/*", "src/**/*.vue"],
+  "exclude": ["src/mocks"],
   "compilerOptions": {
     "noUncheckedIndexedAccess": true,
     "rootDir": ".",

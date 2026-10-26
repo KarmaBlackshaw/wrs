@@ -2,6 +2,8 @@ import type { TConsumableKind, TStockEntryKind, TStockStatus } from "@wrs/contra
 
 import type { TOption, TTone } from "@/types/ui";
 
+export { STOCK_STATUS_LABEL } from "@wrs/contract/labels/consumable";
+
 export const CONSUMABLE_KIND_LABEL: Record<TConsumableKind, string> = {
   per_unit: "Per unit sold",
   maintenance: "Maintenance",
@@ -21,12 +23,6 @@ export const STOCK_ENTRY_KIND_LABEL: Record<TStockEntryKind, string> = {
   maintenance: "Maintenance",
   void: "Void",
   expense_reversal: "Expense reversal",
-};
-
-export const STOCK_STATUS_LABEL: Record<TStockStatus, string> = {
-  ok: "OK",
-  soon: "Reorder soon",
-  reorder: "Reorder now",
 };
 
 export const STOCK_STATUS_TONE: Record<TStockStatus, TTone> = {

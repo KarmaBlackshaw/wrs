@@ -1,11 +1,10 @@
-import type { TExpense, TExpenseSource } from "@wrs/contract/expense";
+import type { TExpense } from "@wrs/contract/expense";
+import { EXPENSE_SOURCE_LABEL } from "@wrs/contract/labels/expense";
 import type { Knex } from "knex";
 import { expenseQuery } from "../expense.ts";
 import type { TReportDefinition } from "./types.ts";
 
 type TRange = Parameters<TReportDefinition["build"]>[1];
-
-const SOURCE_LABEL: Record<TExpenseSource, string> = { drawer: "Drawer", owner: "Owner" };
 
 const liveIn = (query: Knex.QueryBuilder, { from, to }: TRange) => query.whereNull("expenses.deletedAt").whereBetween("expenses.date", [from, to]);
 
@@ -31,7 +30,7 @@ export const expensesReport: TReportDefinition = {
         category: categoryName,
         amount,
         paidBy: paidByName,
-        source: SOURCE_LABEL[source],
+        source: EXPENSE_SOURCE_LABEL[source],
         note,
       })),
     };

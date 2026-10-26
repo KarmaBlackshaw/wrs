@@ -1,4 +1,5 @@
-import type { TInstallment, TLoan, TLoanStatus, TLoanType } from "@wrs/contract/loan";
+import { LOAN_STATUS_LABEL, LOAN_TYPE_LABEL } from "@wrs/contract/labels/loan";
+import type { TInstallment, TLoan } from "@wrs/contract/loan";
 import type { TReportColumn } from "@wrs/contract/report";
 import type { TCtx } from "../../lib/context/makeCtx.ts";
 import { manilaDayBounds } from "../../lib/dates/manilaDayBounds.ts";
@@ -10,16 +11,6 @@ type TRange = Parameters<TReportDefinition["build"]>[1];
 type TLoanRow = Pick<TLoan, "id" | "employeeName" | "type" | "principal" | "status">;
 
 type TInstallmentRow = Pick<TInstallment, "loanId" | "principalPart" | "paid"> & { finalizedAt: string | null };
-
-const TYPE_LABEL: Record<TLoanType, string> = { advance: "Advance", loan: "Loan" };
-
-const STATUS_LABEL: Record<TLoanStatus, string> = {
-  requested: "Requested",
-  approved: "Approved",
-  released: "Released",
-  paid: "Paid",
-  rejected: "Rejected",
-};
 
 const COLUMNS: TReportColumn[] = [
   { key: "employee", label: "Employee", align: "left", format: "text" },
@@ -66,9 +57,9 @@ export const loanBalancesReport: TReportDefinition = {
       columns: COLUMNS,
       rows: rows.map(({ employeeName, type, principal, status, balance }) => ({
         employee: employeeName,
-        type: TYPE_LABEL[type],
+        type: LOAN_TYPE_LABEL[type],
         principal,
-        status: STATUS_LABEL[status],
+        status: LOAN_STATUS_LABEL[status],
         balance,
       })),
     };

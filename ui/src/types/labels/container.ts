@@ -1,6 +1,9 @@
+import { CONTAINER_TYPE_LABEL } from "@wrs/contract/labels/container";
 import type { TContainerTypeCode, TLocationKind, TMovementType } from "@wrs/contract/container";
 
 import type { TOption } from "@/types/ui";
+
+export { CONTAINER_TYPE_LABEL };
 
 export const MOVEMENT_TYPE_LABEL: Record<TMovementType, string> = {
   purchased: "Purchased",
@@ -31,11 +34,6 @@ export const LOCATION_KIND_LABEL: Record<TLocationKind, string> = {
   rider: "Rider",
   customer: "Customer",
   external: "External",
-};
-
-export const CONTAINER_TYPE_LABEL: Record<TContainerTypeCode, string> = {
-  round: "Round",
-  slim: "Slim",
 };
 
 export const CONTAINER_TYPE_OPTIONS: TOption<TContainerTypeCode>[] = [
