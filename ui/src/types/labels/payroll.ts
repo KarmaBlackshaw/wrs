@@ -1,6 +1,6 @@
 import type { TPayFrequency, TRateBasis } from "@wrs/contract/employee";
-import type { TPayLineDeductionKind } from "@wrs/contract/payroll";
-import type { TOption } from "@/types/ui";
+import type { TPayLineDeductionKind, TPayRunStatus } from "@wrs/contract/payroll";
+import type { TOption, TTone } from "@/types/ui";
 
 export const DEDUCTION_LABEL: Record<TPayLineDeductionKind, string> = {
   advance: "Advance",
@@ -9,6 +9,16 @@ export const DEDUCTION_LABEL: Record<TPayLineDeductionKind, string> = {
   credit: "Credit held",
   unpaid_leave: "Unpaid leave",
   carry_over: "Carried over",
+};
+
+export const PAY_RUN_STATUS_LABEL: Record<TPayRunStatus, string> = {
+  draft: "Draft",
+  finalized: "Finalized",
+};
+
+export const PAY_RUN_STATUS_TONE: Record<TPayRunStatus, TTone> = {
+  draft: "warn",
+  finalized: "ok",
 };
 
 export const PAY_FREQUENCY_LABEL: Record<TPayFrequency, string> = {

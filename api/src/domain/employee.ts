@@ -99,13 +99,13 @@ const payPlanQuery = (db: TCtx["db"]) =>
       "payPlans.updatedAt"
     );
 
-const listPayPlans = async (db: TCtx["db"], employeeId: string): Promise<TPayPlan[]> =>
+export const listPayPlans = async (db: TCtx["db"], employeeId: string): Promise<TPayPlan[]> =>
   payPlanQuery(db).where("payPlans.employeeId", employeeId).orderBy("payPlans.effectiveFrom", "desc");
 
 const planOn = (plans: TPayPlan[], date: string) =>
   plans.find(({ effectiveFrom, effectiveTo }) => effectiveFrom <= date && (effectiveTo == null || effectiveTo >= date));
 
-const workingDays = ({ from, to, plans }: { from: string; to: string; plans: TPayPlan[] }) => {
+export const workingDays = ({ from, to, plans }: { from: string; to: string; plans: TPayPlan[] }) => {
   let count = 0;
 
   for (let date = from; date <= to; date = addDays(date, 1)) {

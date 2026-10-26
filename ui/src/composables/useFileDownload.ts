@@ -1,4 +1,4 @@
-import { ApiError, http } from "@/lib/http";
+import { ApiError } from "@/lib/http";
 import { getFileBlob } from "@/services/file";
 
 const REVOKE_DELAY_MS = 60_000;
@@ -45,16 +45,15 @@ export function useFileDownload() {
     }
   }
 
-  async function downloadCsv(slug: string, range: { from?: string; to?: string }) {
+  async function download(fetchFile: () => Promise<Blob>, filename: string) {
     try {
-      const blob = await http.get<Blob>(`/reports/${slug}/csv`, { params: range, responseType: "blob" });
-      const filename = [slug, range.from, range.to].filter((part) => part != null).join("_");
+      const blob = await fetchFile();
 
-      clickDownload(toObjectUrl(blob), `${filename}.csv`);
+      clickDownload(toObjectUrl(blob), filename);
     } catch (caught) {
       reportFailure(caught);
     }
   }
 
-  return { open, downloadCsv };
+  return { open, download };
 }

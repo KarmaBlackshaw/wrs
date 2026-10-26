@@ -26,6 +26,7 @@ export const payLineDeductionSchema = z.object({
   kind: payLineDeductionKindSchema,
   amount: moneySchema,
   refId: idSchema.nullable(),
+  note: z.string().nullable(),
 });
 
 export const payLineAdjustmentSchema = z.object({
@@ -56,6 +57,7 @@ export const payLineSchema = z.object({
   deductionsTotal: moneySchema,
   creditHeld: moneySchema,
   creditRecovered: moneySchema,
+  creditPayback: moneySchema.min(0),
   paidLeaveDays: z.number().int(),
   unpaidLeaveDays: z.number().int(),
   carriedOver: moneySchema,

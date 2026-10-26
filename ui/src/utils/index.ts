@@ -15,6 +15,8 @@ export * from "./payroll/totalDeductions";
 export * from "./prices/currentPrice";
 export * from "./prices/latestEffective";
 export * from "./reports/buildReportTable";
+export * from "./reports/formatReportCell";
+export * from "./reports/formatReportTile";
 export * from "./reports/loanBalance";
 export * from "./reports/maintenanceStates";
 export * from "./reports/salesTotal";

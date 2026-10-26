@@ -18,8 +18,14 @@ const meterReadingQuery = (ctx: TCtx) =>
     .join("employees as e", "e.id", "m.loggedBy")
     .select("m.id", "m.liters", "m.at", "m.loggedBy", ctx.db.raw(`${fullNameSql("e")} as logged_by_name`), "m.createdAt", "m.updatedAt");
 
-export const latestMeterReading = async (ctx: TCtx): Promise<number | undefined> => {
-  const latest: { liters: number } | undefined = await latestRow(ctx).first("liters");
+export const latestMeterReading = async (ctx: TCtx, { asOf }: { asOf?: Date } = {}): Promise<number | undefined> => {
+  const query = latestRow(ctx);
+
+  if (asOf) {
+    query.where("at", "<=", asOf);
+  }
+
+  const latest: { liters: number } | undefined = await query.first("liters");
 
   return latest?.liters;
 };

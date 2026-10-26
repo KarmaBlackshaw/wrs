@@ -96,6 +96,7 @@ const dueStatusResolver = async (ctx: TCtx) => {
 
   const rows: { id: string; type: string }[] = await ctx
     .db("labTests")
+    .where("date", "<=", manilaToday(ctx.now))
     .orderBy([
       { column: "date", order: "desc" },
       { column: "createdAt", order: "desc" },

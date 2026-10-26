@@ -42,6 +42,7 @@ const loadItems = async (ctx: TCtx, consumableId?: string): Promise<TMaintenance
         "consumableId",
         items.map(({ id }) => id)
       )
+      .where("at", "<=", ctx.now)
       .select("consumableId", "at", "meterLiters")
       .orderBy([
         { column: "at", order: "desc" },
@@ -49,7 +50,7 @@ const loadItems = async (ctx: TCtx, consumableId?: string): Promise<TMaintenance
       ])
   );
 
-  const meterLiters = (await latestMeterReading(ctx)) ?? 0;
+  const meterLiters = (await latestMeterReading(ctx, { asOf: ctx.now })) ?? 0;
   const today = Date.parse(manilaDate(ctx.now));
 
   return items.map(({ id, name, intervalLiters, intervalDays }) => {

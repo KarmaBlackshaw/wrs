@@ -87,6 +87,7 @@ export { default as LoanRequestSheet } from "./loan/RequestSheet.vue";
 export { default as LoanScheduleSheet } from "./loan/ScheduleSheet.vue";
 export { default as MaintenanceLogSheet } from "./maintenance/LogSheet.vue";
 export { default as PayrollAdjustSheet } from "./payroll/AdjustSheet.vue";
+export { default as PayrollDaysSheet } from "./payroll/DaysSheet.vue";
 export { default as PayrollNewRunSheet } from "./payroll/NewRunSheet.vue";
 export { default as ProductAddSheet } from "./product/AddSheet.vue";
 export { default as ProductEditSheet } from "./product/EditSheet.vue";
