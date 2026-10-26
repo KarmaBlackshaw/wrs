@@ -66,7 +66,7 @@ export const deliverySchema = z.object({
   updatedAt: isoDateTimeSchema,
 });
 
-export const tripDetailSchema = tripSchema.extend({ lines: z.array(tripLineSchema), deliveries: z.array(deliverySchema) });
+export const tripDetailSchema = tripSchema.extend({ lines: z.array(tripLineSchema), deliveries: z.array(deliverySchema), hasShortage: z.boolean() });
 
 export const tripListQuerySchema = pageQuerySchema.extend({
   ...dateRangeQuerySchema.shape,

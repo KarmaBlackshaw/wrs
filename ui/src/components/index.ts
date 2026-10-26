@@ -21,6 +21,7 @@ export { default as DeliveryPaymentSheet } from "./delivery/PaymentSheet.vue";
 export { default as DrawerCloseSheet } from "./drawer/CloseSheet.vue";
 export { default as DrawerExpenseSheet } from "./drawer/ExpenseSheet.vue";
 export { default as DrawerOpenSheet } from "./drawer/OpenSheet.vue";
+export { default as EmployeeAbsenceSheet } from "./employee/AbsenceSheet.vue";
 export { default as EmployeeAddSheet } from "./employee/AddSheet.vue";
 export { default as EmployeeEditSheet } from "./employee/EditSheet.vue";
 export { default as EmployeePasswordSheet } from "./employee/PasswordSheet.vue";

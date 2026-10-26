@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { TDelivery } from "@wrs/contract/trip";
+import sumBy from "lodash/sumBy";
+import type { TDelivery, TTripDetail } from "@wrs/contract/trip";
 import { getTrip, reconcileTrip } from "@/services/trip";
 import { ROUTES, type TRowAction } from "@/types";
 
@@ -19,18 +20,18 @@ const tripsHomeRoute = computed(() => (authStore.activeRole === "owner" ? ROUTES
 
 const isReconcilable = computed(() => trip.value?.status === "returned");
 
-const fullVariance = computed(() => trip.value?.lines.reduce((sum, { varianceFull }) => sum + (varianceFull ?? 0), 0) ?? 0);
-const emptyVariance = computed(() => trip.value?.lines.reduce((sum, { varianceEmpty }) => sum + (varianceEmpty ?? 0), 0) ?? 0);
+const fullVariance = computed(() => sumBy(trip.value?.lines, ({ varianceFull }) => varianceFull ?? 0));
+const emptyVariance = computed(() => sumBy(trip.value?.lines, ({ varianceEmpty }) => varianceEmpty ?? 0));
 const cashVariance = computed(() => trip.value?.cashVariance ?? 0);
 
 const hasVariance = computed(() => fullVariance.value !== 0 || emptyVariance.value !== 0 || cashVariance.value !== 0);
 
-const suggestedShortageCash = computed(() => Math.max(0, -cashVariance.value));
-const shortageSheetOpen = ref(false);
-const initialShortageContainers = computed(() => Math.max(0, -fullVariance.value));
+const canRecordShortage = computed(
+  () => (trip.value?.status === "returned" || trip.value?.status === "reconciled") && hasVariance.value && !trip.value?.hasShortage
+);
 
-const voidSheetOpen = ref(false);
-const voidTargetSummary = ref("");
+const shortageTrip = ref<TTripDetail>();
+const voidTarget = ref<{ refType: "delivery"; refId: string; summary: string }>();
 
 const productColumns: { key: string; label: string; align?: "left" | "right" }[] = [
   { key: "productName", label: "Product" },
@@ -50,8 +51,11 @@ function productsText(delivery: TDelivery) {
 }
 
 function openVoid(delivery: TDelivery) {
-  voidTargetSummary.value = `Delivery to ${delivery.customerName}, ${productsText(delivery)}, ${formatMoney(delivery.amount)}`;
-  voidSheetOpen.value = true;
+  voidTarget.value = {
+    refType: "delivery",
+    refId: delivery.id,
+    summary: `Delivery to ${delivery.customerName}, ${productsText(delivery)}, ${formatMoney(delivery.amount)}`,
+  };
 }
 
 async function reconcile() {
@@ -66,7 +70,7 @@ async function reconcile() {
 }
 
 function deliveryActions(delivery: TDelivery): TRowAction[] {
-  return [{ label: "Request void", variant: "ghost", onSelect: () => openVoid(delivery) }];
+  return delivery.voidedAt == null ? [{ label: "Request void", variant: "ghost", onSelect: () => openVoid(delivery) }] : [];
 }
 </script>
 
@@ -114,11 +118,11 @@ function deliveryActions(delivery: TDelivery): TRowAction[] {
       </template>
     </UiDataTable>
 
-    <UiButton v-if="hasVariance" variant="secondary" @click="shortageSheetOpen = true">Record shortage</UiButton>
+    <UiButton v-if="canRecordShortage" variant="secondary" @click="shortageTrip = trip">Record shortage</UiButton>
 
-    <TripShortageSheet v-model:open="shortageSheetOpen" :suggested-shortage-cash="suggestedShortageCash" :initial-containers="initialShortageContainers" />
+    <TripShortageSheet v-model:trip="shortageTrip" @submit="reload" />
 
-    <VoidRequestSheet v-model:open="voidSheetOpen" :summary="voidTargetSummary" />
+    <VoidRequestSheet v-model:target="voidTarget" @submit="reload" />
   </div>
 
   <UiPageHeader v-else-if="isLoading" title="Reconcile trip" :back="tripsHomeRoute" />

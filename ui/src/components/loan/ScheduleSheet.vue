@@ -1,40 +1,52 @@
 <script setup lang="ts">
-import type { TInstallment, TLoan } from "@/types";
+import type { TLoan } from "@wrs/contract/loan";
+
+import { getLoanSchedule } from "@/services/loan";
 
 const loan = defineModel<TLoan>("loan");
 
-defineProps<{
-  installments: TInstallment[];
-}>();
+const {
+  data: installments,
+  isLoading,
+  error,
+  reload,
+} = useResource(async (signal) => (loan.value != null ? getLoanSchedule(loan.value.id, signal) : []), { watch: loan });
 
-const employeeStore = useEmployeeStore();
-
-const open = computed({
+const isOpen = computed({
   get: () => loan.value != null,
-  set: (isOpen) => {
-    if (!isOpen) {
+  set: (value) => {
+    if (!value) {
       loan.value = undefined;
     }
   },
 });
+
+const columns = [
+  { key: "seq", label: "Installment" },
+  { key: "amount", label: "Amount", align: "right" as const },
+  { key: "status", label: "Status" },
+];
 </script>
 
 <template>
-  <UiBottomSheet v-model:open="open" title="Installment schedule">
-    <div v-if="loan" class="flex flex-col gap-4">
-      <p class="text-sm text-zinc-500">
-        {{ employeeStore.employeeName(loan.employeeId) }}
-        <template v-if="loan.ratePct">· {{ loan.ratePct }}% {{ loan.method }} · {{ loan.termMonths }} months</template>
-      </p>
-      <ul class="flex flex-col gap-1 text-sm text-zinc-600">
-        <li v-for="installment in installments" :key="installment.seq" class="flex items-center justify-between">
-          <span>#{{ installment.seq }}, due {{ formatDate(installment.due) }}</span>
-          <span class="flex items-center gap-2">
-            <UiMoneyText :centavos="installment.principalPart + installment.interestPart" size="sm" />
-            <UiStatusPill :tone="installment.paid ? 'ok' : 'warn'">{{ installment.paid ? "Paid" : "Pending" }}</UiStatusPill>
-          </span>
-        </li>
-      </ul>
-    </div>
+  <UiBottomSheet v-model:open="isOpen" title="Installment schedule">
+    <p v-if="loan" class="mb-2 text-sm text-zinc-500">
+      {{ loan.employeeName }}
+      <template v-if="loan.ratePct">· {{ loan.ratePct }}% {{ loan.method }} · {{ loan.termMonths }} months</template>
+    </p>
+    <UiDataTable bare :columns :rows="installments ?? []" :row-key="(row) => row.seq" :is-loading :error="error?.message" @retry="reload">
+      <template #cell-seq="{ row }">
+        <span class="text-zinc-700">#{{ row.seq }}, due {{ formatDate(row.due) }}</span>
+      </template>
+      <template #cell-amount="{ row }">
+        <UiMoneyText :centavos="row.principalPart + row.interestPart" size="sm" />
+      </template>
+      <template #cell-status="{ row }">
+        <UiStatusPill :tone="row.paid ? 'ok' : 'warn'">{{ row.paid ? "Paid" : "Pending" }}</UiStatusPill>
+      </template>
+      <template #empty>
+        <UiEmptyState title="No installments" />
+      </template>
+    </UiDataTable>
   </UiBottomSheet>
 </template>

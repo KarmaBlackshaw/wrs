@@ -1,44 +1,69 @@
 <script setup lang="ts">
-const open = defineModel<boolean>("open", { default: false });
+import type { TVoid, TVoidRefType } from "@wrs/contract/void";
 
-defineProps<{
-  summary: string;
-}>();
+import { createVoid } from "@/services/void";
+
+const target = defineModel<{ refType: Exclude<TVoidRefType, "payment">; refId: string; summary: string }>("target");
+
+const emit = defineEmits<{ submit: [void: TVoid] }>();
 
 const toast = useToast();
-const reason = ref("");
+const { run, isRunning, error } = useAction(createVoid, { inline: ["void.already_voided"] });
 
-const canSubmit = computed(() => reason.value.trim().length > 0);
+const draft = ref("");
+const hasSubmitted = ref(false);
+const reason = computed(() => draft.value.trim());
 
-function submit() {
-  if (!canSubmit.value) {
+const isOpen = computed({
+  get: () => target.value != null,
+  set: (value) => {
+    if (!value) {
+      target.value = undefined;
+    }
+  },
+});
+
+watch(target, (value) => {
+  if (value != null) {
+    draft.value = "";
+    hasSubmitted.value = false;
+  }
+});
+
+async function submit() {
+  const current = target.value;
+
+  if (current == null || !reason.value) {
     return;
   }
 
-  toast.show("Void requested");
-  reason.value = "";
-  open.value = false;
+  const { refType, refId } = current;
+  hasSubmitted.value = true;
+  const result = await run({ refType, refId, reason: reason.value });
+
+  if (error.value != null || result == null) {
+    return;
+  }
+
+  emit("submit", result);
+  target.value = undefined;
+  toast.show(result.status === "approved" ? "Voided" : "Sent for approval");
 }
 </script>
 
 <template>
-  <UiBottomSheet v-model:open="open" title="Request void">
+  <UiBottomSheet v-model:open="isOpen" title="Request void">
     <div class="flex flex-col gap-4">
-      <p class="text-base whitespace-pre-line text-zinc-700">{{ summary }}</p>
-      <label class="flex flex-col gap-1.5">
-        <span class="text-sm font-medium text-zinc-700">Reason</span>
-        <textarea
-          v-model="reason"
-          required
-          rows="3"
-          class="w-full rounded-lg border border-zinc-300 bg-white p-3 text-base text-zinc-900 shadow-xs placeholder:text-zinc-500 focus-visible:border-brand-600 focus-visible:ring-4 focus-visible:ring-brand-600/15 focus-visible:outline-none"
-        ></textarea>
-      </label>
+      <p class="text-base whitespace-pre-line text-zinc-700">{{ target?.summary }}</p>
+      <UiTextarea v-model="draft" label="Reason" :hint="reason ? undefined : 'A reason is required'" />
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
-        <UiButton :disabled="!canSubmit" @click="submit">Submit void request</UiButton>
+      <div class="flex flex-col gap-2">
+        <p v-if="hasSubmitted && error != null" role="alert" class="text-sm text-red-700">{{ error.message }}</p>
+        <div class="flex justify-end gap-2">
+          <UiButton :disabled="!reason" :loading="isRunning" @click="submit">Submit void request</UiButton>
+        </div>
       </div>
     </template>
   </UiBottomSheet>

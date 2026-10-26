@@ -12,7 +12,7 @@ type TSourceFilter = "all" | TSaleSource;
 
 const PAGE_SIZE = 20;
 
-const columns = [
+const wideColumns = [
   { key: "createdAt", label: "Date" },
   { key: "source", label: "Source" },
   { key: "customerName", label: "Customer" },
@@ -21,6 +21,11 @@ const columns = [
   { key: "paymentType", label: "Payment" },
   { key: "status", label: "Status" },
 ];
+
+const narrowColumns = [{ key: "createdAt", label: "Sale" }];
+
+const isWide = useMediaQuery("(min-width: 640px)");
+const columns = computed(() => (isWide.value ? wideColumns : narrowColumns));
 
 const from = useRouteQuery("from", "", { mode: "push" });
 const to = useRouteQuery("to", "", { mode: "push" });
@@ -61,12 +66,18 @@ function itemsText({ lines }: TSaleRow) {
   return lines.map(({ qty, productName }) => `${qty}× ${productName}`).join(", ");
 }
 
-const voidSheetOpen = ref(false);
-const voidSummary = ref("");
+const voidTarget = ref<{ refType: "delivery" | "walk_in_sale"; refId: string; summary: string }>();
 
 function openVoid(row: TSaleRow) {
-  voidSummary.value = `${SALE_SOURCE_LABEL[row.source]} sale, ${row.customerName ?? "Walk-in"}, ${formatMoney(row.amount)}`;
-  voidSheetOpen.value = true;
+  voidTarget.value = {
+    refType: row.source === "delivery" ? "delivery" : "walk_in_sale",
+    refId: row.id,
+    summary: `${SALE_SOURCE_LABEL[row.source]} sale, ${row.customerName ?? "Walk-in"}, ${formatMoney(row.amount)}`,
+  };
+}
+
+function saleLabel({ source, customerName }: TSaleRow) {
+  return `${SALE_SOURCE_LABEL[source]} sale, ${customerName ?? "Walk-in"}`;
 }
 
 function saleActions(row: TSaleRow): TRowAction[] {
@@ -85,6 +96,7 @@ function saleActions(row: TSaleRow): TRowAction[] {
       :is-loading="isLoading"
       :error="error?.message"
       :row-actions="saleActions"
+      :row-label="saleLabel"
       :row-key="(row) => row.id"
       @retry="reload"
     >
@@ -102,7 +114,18 @@ function saleActions(row: TSaleRow): TRowAction[] {
           <UiSegmentedControl v-model="source" :options="sourceOptions" />
         </UiFilterChip>
       </template>
-      <template #cell-createdAt="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      <template #cell-createdAt="{ row }">
+        <span class="block">{{ formatDateTime(row.createdAt) }}</span>
+        <span v-if="!isWide" class="flex items-center gap-2">
+          <UiMoneyText :centavos="row.amount" />
+          <UiStatusPill v-if="row.voidStatus === 'voided'" tone="danger">Voided</UiStatusPill>
+          <UiStatusPill v-else-if="row.voidStatus === 'pending'" tone="warn">Void pending</UiStatusPill>
+        </span>
+        <span v-if="!isWide" class="block max-w-48 text-sm whitespace-normal text-zinc-500">
+          {{ SALE_SOURCE_LABEL[row.source] }} · {{ row.customerName ?? "Walk-in" }} · {{ PAYMENT_LABEL[row.paymentType] }}
+        </span>
+        <span v-if="!isWide" class="block max-w-48 text-sm whitespace-normal text-zinc-500">{{ itemsText(row) }}</span>
+      </template>
       <template #cell-source="{ row }">{{ SALE_SOURCE_LABEL[row.source] }}</template>
       <template #cell-customerName="{ row }">{{ row.customerName ?? "Walk-in" }}</template>
       <template #cell-items="{ row }">{{ itemsText(row) }}</template>
@@ -128,6 +151,6 @@ function saleActions(row: TSaleRow): TRowAction[] {
       </template>
     </UiDataTable>
 
-    <VoidRequestSheet v-model:open="voidSheetOpen" :summary="voidSummary" />
+    <VoidRequestSheet v-model:target="voidTarget" @submit="reload" />
   </div>
 </template>

@@ -57,6 +57,7 @@ export const syncConflictSchema = z.object({
   refType: z.string().nullable(),
   refId: idSchema.nullable(),
   status: syncConflictStatusSchema,
+  canVoid: z.boolean(),
 });
 
 export type TSyncOpKind = z.infer<typeof syncOpKindSchema>;

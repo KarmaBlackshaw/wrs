@@ -36,6 +36,7 @@ export const ROUTES = {
   OWNER: {
     INDEX: "/owner",
     APPROVALS: "/owner/approvals",
+    APPROVALS_HANDLED: "/owner/approvals/handled",
     SALES: "/owner/sales",
     TRIPS: "/owner/trips",
     CUSTOMERS: {
@@ -90,6 +91,10 @@ export const RIDER_TABS = {
 };
 
 export const OWNER_TABS = {
+  APPROVALS: [
+    { label: "Pending", to: ROUTES.OWNER.APPROVALS },
+    { label: "Handled", to: ROUTES.OWNER.APPROVALS_HANDLED },
+  ],
   CONTAINERS: [
     { label: "Holdings", to: ROUTES.OWNER.CONTAINERS.INDEX },
     { label: "Movement log", to: ROUTES.OWNER.CONTAINERS.MOVEMENTS },

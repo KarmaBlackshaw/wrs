@@ -1,11 +1,14 @@
 import type { TPayFrequency, TRateBasis } from "@wrs/contract/employee";
-import type { TPayLineDeduction } from "@/types/entities/payroll";
+import type { TPayLineDeductionKind } from "@wrs/contract/payroll";
 import type { TOption } from "@/types/ui";
 
-export const DEDUCTION_LABEL: Record<TPayLineDeduction["kind"], string> = {
+export const DEDUCTION_LABEL: Record<TPayLineDeductionKind, string> = {
   advance: "Advance",
   loan: "Loan installment",
-  shortage: "Approved shortage",
+  shortage: "Shortage",
+  credit: "Credit held",
+  unpaid_leave: "Unpaid leave",
+  carry_over: "Carried over",
 };
 
 export const PAY_FREQUENCY_LABEL: Record<TPayFrequency, string> = {

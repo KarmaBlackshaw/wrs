@@ -7,7 +7,7 @@ import { listContainerTypes } from "./container-type.ts";
 import { getCustomer, setCustomerDepositWaiver } from "./customer.ts";
 import { recordDeposit } from "./deposit.ts";
 
-const waiverRequestQuery = (ctx: TCtx) =>
+export const waiverRequestQuery = (ctx: TCtx) =>
   ctx
     .db("approvalRequests as a")
     .join("customers as c", "c.id", "a.customerId")

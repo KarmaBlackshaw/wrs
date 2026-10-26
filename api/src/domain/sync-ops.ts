@@ -123,8 +123,16 @@ const dispatch = async (ctx: TCtx, op: TSyncOp, serverNow: Date): Promise<TRef> 
   }
 };
 
+const sentCustomerId = (op: TSyncOp) => {
+  if (op.kind === "customer.create") {
+    return op.payload.id;
+  }
+
+  return "customerId" in op.payload ? op.payload.customerId : null;
+};
+
 const claimOp = (ctx: TCtx, op: TSyncOp, status: TOpResult["status"]) =>
-  insertRecord(ctx, "clientOps", { id: op.opId, employeeId: ctx.actor.id, kind: op.kind, status });
+  insertRecord(ctx, "clientOps", { id: op.opId, employeeId: ctx.actor.id, kind: op.kind, status, customerId: sentCustomerId(op) });
 
 const writeConflict = async (ctx: TCtx, { op, codes, ref }: { op: TSyncOp; codes: TErrorCode[]; ref?: TRef }): Promise<TOpResult> => {
   const conflictId = await insertRecord(ctx, "syncConflicts", {

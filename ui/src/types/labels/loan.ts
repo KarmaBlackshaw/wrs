@@ -1,6 +1,5 @@
-import type { TLoanMethod } from "@wrs/contract/setting";
+import type { TLoanMethod, TLoanStatus, TLoanType } from "@wrs/contract/loan";
 
-import type { TLoanStatus } from "@/types/entities/loan";
 import type { TOption, TTone } from "@/types/ui";
 
 export const LOAN_STATUS_TONE: Record<TLoanStatus, TTone> = {
@@ -27,4 +26,14 @@ export const LOAN_METHOD_LABEL: Record<TLoanMethod, string> = {
 export const LOAN_METHOD_OPTIONS: TOption<TLoanMethod>[] = [
   { value: "flat", label: LOAN_METHOD_LABEL.flat },
   { value: "diminishing", label: LOAN_METHOD_LABEL.diminishing },
+];
+
+export const LOAN_TYPE_LABEL: Record<TLoanType, string> = {
+  advance: "Advance",
+  loan: "Loan",
+};
+
+export const LOAN_TYPE_OPTIONS: TOption<TLoanType>[] = [
+  { value: "advance", label: LOAN_TYPE_LABEL.advance },
+  { value: "loan", label: LOAN_TYPE_LABEL.loan },
 ];

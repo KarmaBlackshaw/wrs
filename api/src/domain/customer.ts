@@ -29,6 +29,10 @@ export type TCustomerRow = Omit<TCustomer, "heldByType" | "creditLimit" | "dueSt
   oldestUnpaidOn: string | null;
   settingCreditLimit: number | null;
   today: string;
+  coveringRiderId: string | null;
+  coveringRiderName: string | null;
+  coverageFrom: string | null;
+  coverageUntil: string | null;
 };
 
 const SETTING_CREDIT_LIMIT_SQL =
@@ -130,6 +134,20 @@ export const customerBalancesQuery = (db: TDb) => {
     );
 };
 
+const coverageQuery = (db: TDb, today: string) =>
+  db("coverageAssignments as ca")
+    .join("absences as a", "a.id", "ca.absenceId")
+    .join("employees as cr", "cr.id", "ca.coveringRiderId")
+    .where("a.to", ">=", today)
+    .select(
+      "ca.customerId",
+      "ca.coveringRiderId",
+      db.raw(`${fullNameSql("cr")} as covering_rider_name`),
+      "a.from as coverageFrom",
+      "a.to as coverageUntil",
+      db.raw("row_number() over (partition by ca.customer_id order by a.from, a.id) as coverage_rank")
+    );
+
 export const customerQuery = (ctx: TCtx) => {
   const { db, now } = ctx;
   const today = manilaToday(now);
@@ -137,6 +155,7 @@ export const customerQuery = (ctx: TCtx) => {
   return db("customers as c")
     .join(customerBalancesQuery(db).as("b"), "b.customerId", "c.id")
     .leftJoin("employees as r", "r.id", "c.riderId")
+    .leftJoin(coverageQuery(db, today).as("cv"), (join) => join.on("cv.customerId", "c.id").andOnVal("cv.coverageRank", 1))
     .select(
       "c.id",
       "c.firstName",
@@ -160,17 +179,33 @@ export const customerQuery = (ctx: TCtx) => {
       "b.oldestUnpaidOn",
       db.raw(SETTING_CREDIT_LIMIT_SQL, [now]),
       db.raw("? as today", [today]),
+      "cv.coveringRiderId",
+      "cv.coveringRiderName",
+      "cv.coverageFrom",
+      "cv.coverageUntil",
       "c.createdAt",
       "c.updatedAt"
     );
 };
 
-export const toCustomer = ({ oldestUnpaidOn, settingCreditLimit, today, ...row }: TCustomerRow): TCustomer => ({
+export const toCustomer = ({
+  oldestUnpaidOn,
+  settingCreditLimit,
+  today,
+  coveringRiderId,
+  coveringRiderName,
+  coverageFrom,
+  coverageUntil,
+  ...row
+}: TCustomerRow): TCustomer => ({
   ...row,
   heldByType: { round: 0, slim: 0, ...row.heldByType },
   creditLimit: row.creditLimitOverride ?? settingCreditLimit,
   dueStatus: dueStatus(row, today),
-  coverage: null,
+  coverage:
+    coveringRiderId != null && coveringRiderName != null && coverageFrom != null && coverageUntil != null
+      ? { coveringRiderId, coveringRiderName, from: coverageFrom, until: coverageUntil }
+      : null,
 });
 
 export const listCustomers = async (ctx: TCtx, { page, pageSize, q, scope, show, riderId, balance, aging }: TCustomerListQuery): Promise<TPage<TCustomer>> => {

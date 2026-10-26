@@ -24,6 +24,7 @@ const notFound = () => domainError({ statusCode: 404, code: "not_found", message
 const EXPECTED_CASH_SQL = `(
   (select coalesce(sum(amount), 0) from deliveries where trip_id = t.id and payment_type = 'cash' and voided_at is null)
   + (select coalesce(sum(amount), 0) from deposit_entries where trip_id = t.id and kind = 'collected' and method = 'cash')
+  - (select coalesce(sum(amount), 0) from deposit_entries where trip_id = t.id and kind = 'refunded' and method = 'cash' and drawer_session_id is null)
   + (select coalesce(sum(amount), 0) from payments where trip_id = t.id and method = 'cash' and voided_at is null)
 )`;
 
@@ -144,7 +145,10 @@ export const lockOpenTrip = async (ctx: TCtx, tripId: string): Promise<TTripRow>
 };
 
 export const getTripDetail = async (ctx: TCtx, id: string): Promise<TTripDetail> => {
-  const trip: TTrip | undefined = await tripQuery(ctx.db).where("t.id", id).first();
+  const trip: (TTrip & { hasShortage: number }) | undefined = await tripQuery(ctx.db)
+    .select(ctx.db.raw("exists(select 1 from shortages s where s.source = 'trip' and s.ref_id = t.id and s.dismissed_at is null) as has_shortage"))
+    .where("t.id", id)
+    .first();
 
   if (!trip) {
     throw notFound();
@@ -154,7 +158,7 @@ export const getTripDetail = async (ctx: TCtx, id: string): Promise<TTripDetail>
     throw domainError({ statusCode: 403, code: "trip.not_owner", message: "This trip belongs to another rider." });
   }
 
-  return { ...trip, lines: await tripLines(ctx, id), deliveries: await tripDeliveries(ctx.db, id) };
+  return { ...trip, hasShortage: trip.hasShortage === 1, lines: await tripLines(ctx, id), deliveries: await tripDeliveries(ctx.db, id) };
 };
 
 export const listTrips = (ctx: TCtx, { page, pageSize, from, to, status, riderId }: TTripListQuery): Promise<TPage<TTrip>> => {

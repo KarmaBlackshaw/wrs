@@ -111,9 +111,10 @@ export const employeeDetailSchema = employeeSchema.extend({
   absences: z.array(absenceSchema),
 });
 
-export const coverageProposalSchema = z.array(
-  z.object({ customerId: idSchema, customerName: z.string(), coveringRiderId: idSchema, coveringRiderName: z.string() })
-);
+export const coverageProposalSchema = z.object({
+  assignments: z.array(z.object({ customerId: idSchema, customerName: z.string(), coveringRiderId: idSchema, coveringRiderName: z.string() })),
+  riders: z.array(employeeOptionSchema),
+});
 
 export const absencePreviewBodySchema = z.object({ employeeId: idSchema, from: isoDateSchema, to: isoDateSchema });
 
