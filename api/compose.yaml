@@ -2,6 +2,8 @@ services:
   db:
     image: mysql:8.4
     restart: unless-stopped
+    mem_limit: 256m
+    command: ["--performance-schema=OFF", "--innodb-buffer-pool-size=64M", "--innodb-log-buffer-size=8M"]
     environment:
       MYSQL_DATABASE: ${DB_NAME}
       MYSQL_USER: ${DB_USER}

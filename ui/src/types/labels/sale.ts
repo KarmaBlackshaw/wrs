@@ -1,6 +1,6 @@
-import type { TSaleRow } from "@/types/entities/sale";
+import type { TSaleSource } from "@wrs/contract/sale";
 
-export const SALE_SOURCE_LABEL: Record<TSaleRow["source"], string> = {
+export const SALE_SOURCE_LABEL: Record<TSaleSource, string> = {
   walk_in: "Walk-in",
   delivery: "Delivery",
 };

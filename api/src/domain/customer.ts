@@ -9,6 +9,8 @@ import type {
   TCustomerWaiverBody,
   TOwnershipEvent,
 } from "@wrs/contract/customer";
+import { creditBlock } from "@wrs/contract/rules/creditBlock";
+import { depositDue as contractDepositDue } from "@wrs/contract/rules/depositDue";
 import { dueStatus } from "@wrs/contract/rules/dueStatus";
 import { isEarlyRelease } from "@wrs/contract/rules/isEarlyRelease";
 import type { Knex } from "knex";
@@ -18,6 +20,7 @@ import { manilaToday } from "../lib/dates/manilaToday.ts";
 import { domainError } from "../lib/errors/domainError.ts";
 import { paginate } from "../lib/page/paginate.ts";
 import { fullNameSql } from "../lib/sql/fullNameSql.ts";
+import { listContainerTypes } from "./container-type.ts";
 
 type TDb = TCtx["db"];
 
@@ -384,4 +387,32 @@ export const setCustomerDepositWaiver = async (ctx: TCtx, id: string, { waived }
   await ctx.db("customers").where({ id }).update({ depositWaived: waived });
 
   return getCustomer(ctx, id);
+};
+
+const creditMessages = {
+  "credit.not_enabled": "Credit is not enabled for this customer.",
+  "credit.over_limit": "This would put the customer over their credit limit.",
+  "setting.not_set": "The default credit limit is not set.",
+};
+
+export const assertCredit = async (ctx: TCtx, { customerId, amount }: { customerId: string; amount: number }) => {
+  await lockCustomer(ctx, customerId);
+
+  const customer = await getCustomer(ctx, customerId);
+  const code = creditBlock(customer, amount);
+
+  if (code) {
+    ctx.violation(code, creditMessages[code], { customerId, amount, creditBalance: customer.creditBalance, creditLimit: customer.creditLimit });
+  }
+};
+
+export const depositDue = async (
+  ctx: TCtx,
+  { customerId, borrowed }: { customerId: string; borrowed: { containerType: TContainerTypeCode; qty: number }[] }
+) => {
+  await lockCustomer(ctx, customerId);
+
+  const [customer, containerTypes] = await Promise.all([getCustomer(ctx, customerId), listContainerTypes(ctx)]);
+
+  return contractDepositDue({ customer, containerTypes, borrowed });
 };

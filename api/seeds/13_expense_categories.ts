@@ -1,5 +1,5 @@
 import type { Knex } from "knex";
-import { id } from "./ids/index.ts";
+import { ID_GROUP, id } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
   const created_at = new Date();
@@ -8,7 +8,7 @@ export async function seed(knex: Knex) {
 
   await knex("expense_categories").insert(
     ["Consumables", "Electricity", "Water supply", "Fuel", "Repairs", "Payroll", "Loans and advances", "Rent", "Other"].map((name, i) => ({
-      id: id(8, i + 1),
+      id: id(ID_GROUP.expenseCategory, i + 1),
       name,
       created_at,
     }))
