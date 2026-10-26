@@ -1,14 +1,17 @@
 <script setup lang="ts">
+import type { TMaintenanceItem } from "@wrs/contract/maintenance";
+
 import { IconPackage } from "@/components";
-import { consumables } from "@/mocks/consumables";
-import { maintenanceLogs as maintenanceLogsMock } from "@/mocks/maintenance";
-import { meterReadings } from "@/mocks/meterReadings";
-import { type TConsumable, type TMaintenanceLog, type TRowAction, OWNER_TABS } from "@/types";
+import { listMaintenance } from "@/services/maintenance";
+import { listMeterReadings } from "@/services/meterReading";
+import { MAINTENANCE_STATUS_LABEL, MAINTENANCE_STATUS_TONE, OWNER_TABS, type TRowAction } from "@/types";
 
 definePage({ meta: { title: "Maintenance" } });
 
-const maintenanceLogs = ref<TMaintenanceLog[]>([...maintenanceLogsMock]);
-const latestMeterLiters = computed(() => Math.max(...meterReadings.map((reading) => reading.liters)));
+const { data, isLoading, error, reload: reloadItems } = useResource((signal) => listMaintenance(signal));
+const { data: readings, reload: reloadReadings } = useResource((signal) => listMeterReadings({ page: 1 }, signal));
+
+const latestMeterLiters = computed(() => readings.value?.items[0]?.liters);
 
 const columns = [
   { key: "name", label: "Item" },
@@ -17,37 +20,15 @@ const columns = [
   { key: "notes", label: "Notes" },
 ];
 
-const rows = computed(() =>
-  consumables
-    .filter((consumable) => consumable.kind === "maintenance")
-    .map((item) => ({ item, state: computeMaintenanceState(item, maintenanceLogs.value, latestMeterLiters.value) }))
-);
+const logSheetItem = ref<TMaintenanceItem>();
 
-const statusTone = {
-  ok: "ok",
-  due: "warn",
-  overdue: "danger",
-} as const;
-
-const statusLabel = {
-  ok: "OK",
-  due: "Due soon",
-  overdue: "Overdue",
-} as const;
-
-const logSheetItem = ref<TConsumable>();
-
-function logReplacement(item: TConsumable, meterLiters: number) {
-  maintenanceLogs.value.push({
-    id: `maint-${maintenanceLogs.value.length + 1}`,
-    consumableId: item.id,
-    at: new Date().toISOString(),
-    meterLiters,
-  });
+function maintenanceActions(item: TMaintenanceItem): TRowAction[] {
+  return [{ label: "Log replacement", onSelect: () => (logSheetItem.value = item) }];
 }
 
-function maintenanceActions({ item }: { item: TConsumable }): TRowAction[] {
-  return [{ label: "Log replacement", onSelect: () => (logSheetItem.value = item) }];
+function reload() {
+  reloadItems();
+  reloadReadings();
 }
 </script>
 
@@ -59,24 +40,26 @@ function maintenanceActions({ item }: { item: TConsumable }): TRowAction[] {
       :icon="IconPackage"
       :tabs="OWNER_TABS.INVENTORY"
       :columns="columns"
-      :rows="rows"
-      :row-key="(row) => row.item.id"
+      :rows="data ?? []"
+      :is-loading="isLoading"
+      :error="error?.message"
+      :row-key="(row) => row.consumableId"
+      @retry="reloadItems"
     >
-      <template #cell-name="{ row }">{{ row.item.name }}</template>
       <template #cell-status="{ row }">
-        <UiStatusPill :tone="statusTone[row.state.status]">{{ statusLabel[row.state.status] }}</UiStatusPill>
+        <UiStatusPill :tone="MAINTENANCE_STATUS_TONE[row.status]">{{ MAINTENANCE_STATUS_LABEL[row.status] }}</UiStatusPill>
       </template>
-      <template #cell-lastReplaced="{ row }">{{ row.state.lastReplacedAt ? formatDate(row.state.lastReplacedAt) : "Never" }}</template>
+      <template #cell-lastReplaced="{ row }">{{ row.lastReplacedAt != null ? formatDate(row.lastReplacedAt) : "Never" }}</template>
       <template #cell-notes="{ row }">
-        {{ row.state.litersSince !== null ? `${row.state.litersSince.toLocaleString()} L since replacement` : "No meter baseline yet" }}
-        <span v-if="row.item.intervalLiters"> · interval {{ row.item.intervalLiters.toLocaleString() }} L</span>
-        <span v-if="row.item.intervalDays"> · every {{ row.item.intervalDays }} days</span>
+        {{ row.litersSince != null ? `${row.litersSince.toLocaleString()} L since replacement` : "No meter baseline yet" }}
+        <span v-if="row.intervalLiters != null"> · interval {{ row.intervalLiters.toLocaleString() }} L</span>
+        <span v-if="row.intervalDays != null"> · every {{ row.intervalDays }} days</span>
       </template>
       <template #empty>
         <UiEmptyState title="No maintenance items yet" />
       </template>
     </UiDataTable>
 
-    <MaintenanceLogSheet v-model:item="logSheetItem" :latest-meter-liters="latestMeterLiters" @submit="logReplacement" />
+    <MaintenanceLogSheet v-model:item="logSheetItem" :latest-meter-liters="latestMeterLiters" @submit="reload" />
   </div>
 </template>

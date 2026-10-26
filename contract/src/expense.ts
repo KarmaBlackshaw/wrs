@@ -35,7 +35,7 @@ export const expenseSchema = z.object({
 
 const noteSchema = z.string().trim().min(1).max(255);
 
-export const expenseCreateSchema = z.object({
+const expenseBodySchema = z.object({
   categoryId: idSchema,
   amount: moneySchema.min(1),
   note: noteSchema.optional(),
@@ -44,7 +44,12 @@ export const expenseCreateSchema = z.object({
   receiptFileId: idSchema.optional(),
 });
 
-export const expenseUpdateSchema = expenseCreateSchema
+export const expenseCreateSchema = expenseBodySchema.refine(({ consumableId, qty }) => (consumableId == null) === (qty == null), {
+  message: "Consumable and qty go together",
+  path: ["qty"],
+});
+
+export const expenseUpdateSchema = expenseBodySchema
   .partial()
   .extend({ note: noteSchema.nullable().optional(), receiptFileId: idSchema.nullable().optional() });
 

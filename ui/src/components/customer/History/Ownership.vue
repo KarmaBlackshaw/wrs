@@ -5,13 +5,10 @@ import { listCustomerOwnerships } from "@/services/customer";
 
 const { customerId } = defineProps<{ customerId: string }>();
 
-const { page, resetPageOn, clampTo } = usePageQuery("ownershipPage");
-
-resetPageOn(() => customerId);
-
-const { data, isLoading, error, reload } = useResource((signal) => listCustomerOwnerships({ id: customerId, query: { page: page.value }, signal }), {
-  watch: [page, () => customerId],
-});
+const { page, clampTo, data, rows, isLoading, error, reload } = useCustomerHistory(
+  ({ customerId, page, signal }) => listCustomerOwnerships({ id: customerId, query: { page }, signal }),
+  { customerId: () => customerId, pageKey: "ownershipPage" }
+);
 
 const columns = [
   { key: "event", label: "Event" },
@@ -19,8 +16,6 @@ const columns = [
   { key: "by", label: "By" },
   { key: "date", label: "Date" },
 ];
-
-const rows = computed(() => data.value?.items ?? []);
 
 function riderLabel(row: TCustomerOwnership) {
   return row.riderName ?? "Open";

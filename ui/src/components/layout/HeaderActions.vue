@@ -22,6 +22,7 @@ watch(
 
 <template>
   <div class="ml-auto flex min-w-0 items-center gap-3">
+    <slot></slot>
     <template v-if="authStore.meName">
       <button
         ref="trigger"

@@ -1,41 +1,65 @@
 <script setup lang="ts">
-import { containerHoldings } from "@/mocks/containers";
+import type { THolding, TContainerTypeCode } from "@wrs/contract/container";
+
+import { createCounts, listHoldings } from "@/services/container";
 import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Daily count" } });
 
+type TCount = Pick<THolding, "full" | "empty">;
+type TCountField = keyof TCount;
+
 const router = useRouter();
 const toast = useToast();
+const containerTypeStore = useContainerTypeStore();
+const { types } = storeToRefs(containerTypeStore);
 
-const stationHoldings = containerHoldings.filter((holding) => holding.location === "station");
+containerTypeStore.load();
 
-const counted = ref<Record<string, { full: number; empty: number }>>(
-  Object.fromEntries(stationHoldings.map((holding) => [holding.type, { full: holding.full, empty: holding.empty }]))
-);
+const { data: holdings, error, isLoading, reload } = useResource((signal) => listHoldings({ locationKind: "station" }, signal));
+const { run, isRunning } = useAction(createCounts);
 
-function setFull(type: string, qty: number) {
-  const entry = counted.value[type];
+const counted = ref<Partial<Record<TContainerTypeCode, TCount>>>({});
 
-  if (entry) {
-    entry.full = qty;
+watch(holdings, (page) => {
+  if (page == null) {
+    return;
   }
-}
 
-function setEmpty(type: string, qty: number) {
-  const entry = counted.value[type];
+  counted.value = {};
 
-  if (entry) {
-    entry.empty = qty;
+  for (const { containerType, full, empty } of page.items) {
+    counted.value[containerType] = { full, empty };
   }
+});
+
+function countOf(code: TContainerTypeCode): TCount {
+  return counted.value[code] ?? { full: 0, empty: 0 };
 }
 
-function variance(type: string, field: "full" | "empty") {
-  const holding = stationHoldings.find((candidate) => candidate.type === type);
+function expectedOf(code: TContainerTypeCode, field: TCountField) {
+  const holding = holdings.value?.items.find((candidate) => candidate.containerType === code);
 
-  return (counted.value[type]?.[field] ?? 0) - (holding?.[field] ?? 0);
+  return holding?.[field] ?? 0;
 }
 
-function submit() {
+function setCount(code: TContainerTypeCode, field: TCountField, qty: number) {
+  counted.value[code] = { ...countOf(code), [field]: qty };
+}
+
+function variance(code: TContainerTypeCode, field: TCountField) {
+  return countOf(code)[field] - expectedOf(code, field);
+}
+
+async function submit() {
+  const saved = await run({
+    counts: types.value.map(({ code }) => ({ containerType: code, ...countOf(code) })),
+  });
+
+  if (saved == null) {
+    return;
+  }
+
   toast.show("Saved");
   router.push(ROUTES.CASHIER.INDEX);
 }
@@ -45,34 +69,44 @@ function submit() {
   <div class="flex flex-col gap-4">
     <UiPageHeader title="Daily count" subtitle="Count round and slim containers against expected station holdings.">
       <template #actions>
-        <UiButton @click="submit">Submit count</UiButton>
+        <UiButton :loading="isRunning" :disabled="holdings == null" @click="submit">Submit count</UiButton>
       </template>
     </UiPageHeader>
 
-    <UiCard v-for="holding in stationHoldings" :key="holding.type" :title="holding.type === 'round' ? 'Round' : 'Slim'">
-      <p class="text-sm text-zinc-500">Expected {{ holding.full }} full, {{ holding.empty }} empty</p>
-      <div class="mt-3 grid grid-cols-2 gap-3">
-        <div>
-          <UiStepper
-            label="Full counted"
-            :model-value="counted[holding.type]?.full ?? 0"
-            :min="0"
-            :max="999"
-            @update:model-value="(value) => setFull(holding.type, value)"
-          />
-          <UiVariancePill class="mt-2" :value="variance(holding.type, 'full')" />
+    <UiEmptyState v-if="error != null" title="Couldn't load" :description="error.message">
+      <template #action>
+        <UiButton variant="secondary" @click="reload">Retry</UiButton>
+      </template>
+    </UiEmptyState>
+
+    <template v-else-if="holdings != null">
+      <UiCard v-for="type in types" :key="type.code" :title="CONTAINER_TYPE_LABEL[type.code]">
+        <p class="text-sm text-zinc-500">Expected {{ expectedOf(type.code, "full") }} full, {{ expectedOf(type.code, "empty") }} empty</p>
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div>
+            <UiStepper
+              label="Full counted"
+              :model-value="countOf(type.code).full"
+              :min="0"
+              :max="999"
+              @update:model-value="(value) => setCount(type.code, 'full', value)"
+            />
+            <UiVariancePill class="mt-2" :value="variance(type.code, 'full')" />
+          </div>
+          <div>
+            <UiStepper
+              label="Empty counted"
+              :model-value="countOf(type.code).empty"
+              :min="0"
+              :max="999"
+              @update:model-value="(value) => setCount(type.code, 'empty', value)"
+            />
+            <UiVariancePill class="mt-2" :value="variance(type.code, 'empty')" />
+          </div>
         </div>
-        <div>
-          <UiStepper
-            label="Empty counted"
-            :model-value="counted[holding.type]?.empty ?? 0"
-            :min="0"
-            :max="999"
-            @update:model-value="(value) => setEmpty(holding.type, value)"
-          />
-          <UiVariancePill class="mt-2" :value="variance(holding.type, 'empty')" />
-        </div>
-      </div>
-    </UiCard>
+      </UiCard>
+    </template>
+
+    <p v-else-if="isLoading" class="text-sm text-zinc-500">Loading…</p>
   </div>
 </template>

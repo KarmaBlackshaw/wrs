@@ -1,8 +1,9 @@
 import type { Knex } from "knex";
+import { historyWindow } from "./ids/history.ts";
 import { CONSUMABLE } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
-  const created_at = new Date();
+  const { masterDataAt: created_at } = historyWindow();
 
   await knex("consumables").del();
 
@@ -15,6 +16,6 @@ export async function seed(knex: Knex) {
       { id: CONSUMABLE.roMembrane, name: "RO membrane", unit: "pc", kind: "maintenance", reorder_level: 1, interval_liters: 400000, interval_days: 730 },
       { id: CONSUMABLE.uvLamp, name: "UV lamp", unit: "pc", kind: "maintenance", reorder_level: 1, interval_days: 365 },
       { id: CONSUMABLE.sanitizer, name: "Sanitizer", unit: "L", kind: "general", reorder_level: 2 },
-    ].map((c) => ({ ...c, created_at }))
+    ].map((c) => ({ ...c, created_at, updated_at: created_at }))
   );
 }

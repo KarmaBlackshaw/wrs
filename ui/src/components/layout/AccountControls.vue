@@ -17,8 +17,9 @@ const activeRole = computed({
 });
 
 function logout() {
-  authStore.logout();
-  router.push(ROUTES.LOGIN);
+  if (authStore.logout()) {
+    router.push(ROUTES.LOGIN);
+  }
 }
 
 const roleOptions = computed(() => authStore.me?.roles.map((role) => ({ value: role, label: ROLE_LABEL[role] })) ?? []);

@@ -7,7 +7,7 @@ export function uploadFile(file: File) {
 
   body.append("file", file);
 
-  return http.post<TFile>("/files", body);
+  return http.post<TFile>("/files", body, { timeout: 120_000 });
 }
 
 export function getFileBlob(id: string, signal?: AbortSignal) {

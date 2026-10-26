@@ -7,12 +7,17 @@ import { ROUTES } from "@/types";
 
 const open = defineModel<boolean>("open", { default: false });
 
+const { isRiderMode = false } = defineProps<{
+  isRiderMode?: boolean;
+}>();
+
 const emit = defineEmits<{
   submit: [customer: TCustomer];
 }>();
 
 const toast = useToast();
 const confirmDialog = useConfirm();
+const syncStore = useSyncStore();
 const employeeStore = useEmployeeStore();
 const { riderOptions } = storeToRefs(employeeStore);
 const { run, isRunning, error } = useAction(createCustomer, { inline: ["validation", "customer.duplicate_phone", "customer.duplicate_name"] });
@@ -24,19 +29,27 @@ const addressDraft = ref("");
 const riderDraft = ref<string>();
 const intervalDraft = ref<number>();
 const hasAttempted = ref(false);
+const isEnqueuing = ref(false);
+const clientId = ref(crypto.randomUUID());
 const saveBlockReasonId = useId();
 
 watch(open, (isOpen) => {
   if (isOpen) {
     reset();
-    void employeeStore.load();
+
+    if (!isRiderMode) {
+      void employeeStore.load();
+    }
   }
 });
 
 const isIntervalValid = computed(
   () =>
-    intervalDraft.value == null ||
-    (Number.isInteger(intervalDraft.value) && intervalDraft.value >= DELIVERY_INTERVAL_DAYS.min && intervalDraft.value <= DELIVERY_INTERVAL_DAYS.max)
+    (intervalDraft.value == null && !isRiderMode) ||
+    (intervalDraft.value != null &&
+      Number.isInteger(intervalDraft.value) &&
+      intervalDraft.value >= DELIVERY_INTERVAL_DAYS.min &&
+      intervalDraft.value <= DELIVERY_INTERVAL_DAYS.max)
 );
 
 const saveBlockReason = computed(() => {
@@ -52,7 +65,9 @@ const saveBlockReason = computed(() => {
 });
 
 const saveDescribedBy = computed(() => (saveBlockReason.value != null ? saveBlockReasonId : undefined));
-const intervalHint = `Optional, ${DELIVERY_INTERVAL_DAYS.min} to ${DELIVERY_INTERVAL_DAYS.max}`;
+const intervalLabel = isRiderMode ? "Delivery interval (days), required" : "Delivery interval (days)";
+const intervalHint = `${isRiderMode ? "Required" : "Optional"}, ${DELIVERY_INTERVAL_DAYS.min} to ${DELIVERY_INTERVAL_DAYS.max}`;
+const isSaving = computed(() => isRunning.value || isEnqueuing.value);
 const shownError = computed(() => (hasAttempted.value ? error.value : undefined));
 const formErrorMessage = computed(() => (shownError.value?.code === "validation" ? shownError.value.message : undefined));
 const phoneErrorMessage = computed(() => (shownError.value?.code === "customer.duplicate_phone" ? shownError.value.message : undefined));
@@ -87,6 +102,43 @@ function reset() {
   riderDraft.value = undefined;
   intervalDraft.value = undefined;
   hasAttempted.value = false;
+  clientId.value = crypto.randomUUID();
+}
+
+async function enqueueCreate() {
+  const { value: deliveryIntervalDays } = intervalDraft;
+
+  if (deliveryIntervalDays == null) {
+    return;
+  }
+
+  isEnqueuing.value = true;
+
+  try {
+    await syncStore.enqueue({
+      kind: "customer.create",
+      opId: clientId.value,
+      payload: {
+        id: clientId.value,
+        firstName: firstNameDraft.value.trim(),
+        lastName: lastNameDraft.value.trim(),
+        phone: phoneDraft.value.trim(),
+        address: addressDraft.value.trim(),
+        deliveryIntervalDays,
+      },
+    });
+  } catch (enqueueError) {
+    console.error(enqueueError);
+    toast.show("Couldn't save the customer on this device. Try again.", "error");
+
+    return;
+  } finally {
+    isEnqueuing.value = false;
+  }
+
+  toast.show("Customer added, pending owner approval");
+  reset();
+  open.value = false;
 }
 
 async function save(allowDuplicateName?: boolean) {
@@ -133,6 +185,12 @@ async function submit() {
     return;
   }
 
+  if (isRiderMode) {
+    await enqueueCreate();
+
+    return;
+  }
+
   await save();
 }
 </script>
@@ -146,10 +204,11 @@ async function submit() {
       </div>
       <UiField v-model="phoneDraft" label="Phone" type="tel" :error="phoneErrorMessage" />
       <UiField v-model="addressDraft" label="Address" hint="Free text, landmarks welcome" />
-      <UiSelect v-model="riderDraft" label="Rider" :options="riderOptions" placeholder="No rider" />
+      <UiSelect v-if="!isRiderMode" v-model="riderDraft" label="Rider" :options="riderOptions" placeholder="No rider" />
       <UiNumberField
         v-model="intervalDraft"
-        label="Delivery interval (days)"
+        :label="intervalLabel"
+        :required="isRiderMode"
         :min="DELIVERY_INTERVAL_DAYS.min"
         :max="DELIVERY_INTERVAL_DAYS.max"
         :hint="intervalHint"
@@ -164,7 +223,7 @@ async function submit() {
         </p>
         <p v-if="saveBlockReason != null" :id="saveBlockReasonId" class="text-sm text-zinc-600">{{ saveBlockReason }}</p>
         <div class="flex justify-end gap-2">
-          <UiButton size="lg" :disabled="saveBlockReason != null" :aria-describedby="saveDescribedBy" :loading="isRunning" @click="submit">
+          <UiButton size="lg" :disabled="saveBlockReason != null" :aria-describedby="saveDescribedBy" :loading="isSaving" @click="submit">
             Save customer
           </UiButton>
         </div>

@@ -1,79 +1,106 @@
 <script setup lang="ts">
+import type { TLoan, TLoanStatus } from "@wrs/contract/loan";
+
 import { IconIdentificationBadge } from "@/components";
-import { installments, loans as loansMock } from "@/mocks/loans";
-import { type TLoan, type TLoanRow, type TRowAction, OWNER_TABS } from "@/types";
+import { listLoans, rejectLoan } from "@/services/loan";
+import { type TOption, type TRowAction, OWNER_TABS } from "@/types";
+
+type TStatusFilter = "all" | TLoanStatus;
 
 definePage({ meta: { title: "Loans" } });
 
-const employeeStore = useEmployeeStore();
-
 const toast = useToast();
+const fileDownload = useFileDownload();
 
-const loans = ref<TLoan[]>([...loansMock]);
+const status = useRouteQuery<TStatusFilter>("status", "all", { mode: "push" });
+const { page, resetPageOn, clampTo } = usePageQuery();
+
+resetPageOn([status]);
+
+const query = computed(() => ({ status: status.value === "all" ? undefined : status.value, page: page.value }));
+
+const { data, isLoading, error, reload } = useResource((signal) => listLoans(query.value, signal), {
+  watch: [query],
+});
+
+const rows = computed(() => data.value?.items ?? []);
 
 const columns = [
-  { key: "employee", label: "Employee" },
-  { key: "type", label: "Type" },
+  { key: "employeeName", label: "Employee" },
   { key: "status", label: "Status" },
-  { key: "principal", label: "Principal", align: "right" as const },
   { key: "balance", label: "Balance", align: "right" as const },
 ];
 
-const rows = computed(() =>
-  loans.value.map((loan): TLoanRow => ({
-    ...loan,
-    employee: employeeStore.employeeName(loan.employeeId),
-    balance: balance(loan),
-  }))
-);
+const statusOptions: TOption<TStatusFilter>[] = [
+  { value: "all", label: "All" },
+  { value: "requested", label: LOAN_STATUS_LABEL.requested },
+  { value: "released", label: LOAN_STATUS_LABEL.released },
+  { value: "paid", label: LOAN_STATUS_LABEL.paid },
+  { value: "rejected", label: LOAN_STATUS_LABEL.rejected },
+];
 
-function schedule(loanId: string) {
-  return installments.filter((installment) => installment.loanId === loanId).sort((a, b) => a.seq - b.seq);
-}
-
-function balance(loan: TLoan) {
-  const paid = schedule(loan.id)
-    .filter((installment) => installment.paid)
-    .reduce((sum, installment) => sum + installment.principalPart, 0);
-
-  return loan.status === "released" || loan.status === "paid" ? Math.max(0, loan.principal - paid) : loan.principal;
-}
+const statusLabel = computed(() => (status.value === "all" ? undefined : LOAN_STATUS_LABEL[status.value]));
 
 const scheduleLoan = ref<TLoan>();
-const scheduleInstallments = computed(() => (scheduleLoan.value ? schedule(scheduleLoan.value.id) : []));
+const releaseLoan = ref<TLoan>();
+const rejectTarget = ref<TLoan>();
 
-function approve(loan: TLoan) {
-  loan.status = "approved";
-  toast.show("Saved");
+const isRejectOpen = computed({
+  get: () => rejectTarget.value != null,
+  set: (value) => {
+    if (!value) {
+      rejectTarget.value = undefined;
+    }
+  },
+});
+
+const { run: runReject, isRunning: isRejecting, error: rejectError } = useAction(rejectLoan, { inline: ["approval.not_pending"] });
+
+async function reject(reason: string) {
+  const target = rejectTarget.value;
+
+  if (target == null) {
+    return;
+  }
+
+  const rejected = await runReject({ id: target.id, body: { reason } });
+
+  if (rejected == null && rejectError.value?.code !== "approval.not_pending") {
+    return;
+  }
+
+  toast.show(rejected == null ? "Already handled" : "Loan rejected", rejected == null ? "error" : "success");
+
+  rejectTarget.value = undefined;
+  reload();
 }
 
-const releaseLoan = ref<TLoan>();
+function hasBalance({ status }: TLoan) {
+  return status === "released" || status === "paid";
+}
 
 function loanActions(loan: TLoan) {
   const actions: TRowAction[] = [];
 
-  if (schedule(loan.id).length > 0) {
-    actions.push({ label: "Schedule", variant: "ghost", onSelect: () => (scheduleLoan.value = loan) });
-  }
-
   if (loan.status === "requested") {
-    actions.push({ label: "Approve", onSelect: () => approve(loan) });
-  }
-
-  if (loan.status === "approved") {
     actions.push({ label: "Release", variant: "primary", onSelect: () => (releaseLoan.value = loan) });
   }
 
-  return actions;
-}
-
-function releaseWithAuthorization(file: File) {
-  if (!releaseLoan.value) {
-    return;
+  if (loan.status === "requested") {
+    actions.push({ label: "Reject", variant: "ghost", onSelect: () => (rejectTarget.value = loan) });
   }
 
-  releaseLoan.value.status = "released";
-  releaseLoan.value.authorizationUrl = URL.createObjectURL(file);
+  if (loan.status === "released" || loan.status === "paid") {
+    actions.push({ label: "Schedule", variant: "ghost", onSelect: () => (scheduleLoan.value = loan) });
+  }
+
+  const { authorizationFileId } = loan;
+
+  if (authorizationFileId != null) {
+    actions.push({ label: "View IOU photo", variant: "ghost", onSelect: () => fileDownload.open(authorizationFileId) });
+  }
+
+  return actions;
 }
 </script>
 
@@ -84,29 +111,43 @@ function releaseWithAuthorization(file: File) {
       title="People"
       :icon="IconIdentificationBadge"
       :tabs="OWNER_TABS.PEOPLE"
-      :columns="columns"
-      :rows="rows"
+      :columns
+      :rows
       :row-key="(row) => row.id"
+      :row-label="(row) => row.employeeName"
+      :total="data?.total"
+      :is-loading="isLoading"
+      :error="error?.message"
+      @retry="reload"
     >
-      <template #cell-type="{ row }">
-        <UiStatusPill tone="neutral">{{ row.type }}</UiStatusPill>
+      <template #filters>
+        <UiFilterChip label="Status" :value="statusLabel" @clear="status = 'all'">
+          <UiSegmentedControl v-model="status" :options="statusOptions" />
+        </UiFilterChip>
+      </template>
+      <template #cell-employeeName="{ row }">
+        <span class="block">{{ row.employeeName }}</span>
+        <span class="block text-sm text-zinc-500"> {{ LOAN_TYPE_LABEL[row.type] }} · <UiMoneyText :centavos="row.principal" size="sm" tone="muted" /> </span>
       </template>
       <template #cell-status="{ row }">
         <UiStatusPill :tone="LOAN_STATUS_TONE[row.status]">{{ LOAN_STATUS_LABEL[row.status] }}</UiStatusPill>
       </template>
-      <template #cell-principal="{ row }">
-        <UiMoneyText :centavos="row.principal" size="sm" tone="muted" />
-      </template>
       <template #cell-balance="{ row }">
-        <UiMoneyText :centavos="row.balance" />
+        <UiMoneyText v-if="hasBalance(row)" :centavos="row.balance" />
+        <template v-else>—</template>
       </template>
       <template #empty>
-        <UiEmptyState title="No loans yet" />
+        <UiEmptyState title="No loans match your filter" />
+      </template>
+      <template v-if="data != null" #footer>
+        <UiPagination v-model:page="page" :total="data.total" :page-size="data.pageSize" @clamp="clampTo" />
       </template>
     </UiDataTable>
 
-    <LoanScheduleSheet v-model:loan="scheduleLoan" :installments="scheduleInstallments" />
+    <LoanScheduleSheet v-model:loan="scheduleLoan" />
 
-    <LoanReleaseSheet v-model:loan="releaseLoan" @submit="releaseWithAuthorization" />
+    <LoanReleaseSheet v-model:loan="releaseLoan" @submit="reload" />
+
+    <UiReasonSheet v-model:open="isRejectOpen" title="Reject loan" confirm-label="Reject" :is-submitting="isRejecting" @submit="reject" />
   </div>
 </template>

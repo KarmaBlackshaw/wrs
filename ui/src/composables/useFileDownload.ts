@@ -1,4 +1,4 @@
-import { http } from "@/lib/http";
+import { ApiError } from "@/lib/http";
 import { getFileBlob } from "@/services/file";
 
 const REVOKE_DELAY_MS = 60_000;
@@ -21,6 +21,12 @@ function clickDownload(url: string, filename: string) {
 }
 
 export function useFileDownload() {
+  const toast = useToast();
+
+  function reportFailure(caught: unknown) {
+    toast.show(caught instanceof ApiError ? caught.message : "Couldn't download the file.", "error");
+  }
+
   async function open(fileId: string) {
     const tab = window.open("", "_blank");
 
@@ -35,16 +41,19 @@ export function useFileDownload() {
       }
     } catch (caught) {
       tab?.close();
-      throw caught;
+      reportFailure(caught);
     }
   }
 
-  async function downloadCsv(slug: string, range: { from?: string; to?: string }) {
-    const blob = await http.get<Blob>(`/reports/${slug}/csv`, { params: range, responseType: "blob" });
-    const filename = [slug, range.from, range.to].filter((part) => part != null).join("_");
+  async function download(fetchFile: () => Promise<Blob>, filename: string) {
+    try {
+      const blob = await fetchFile();
 
-    clickDownload(toObjectUrl(blob), `${filename}.csv`);
+      clickDownload(toObjectUrl(blob), filename);
+    } catch (caught) {
+      reportFailure(caught);
+    }
   }
 
-  return { open, downloadCsv };
+  return { open, download };
 }

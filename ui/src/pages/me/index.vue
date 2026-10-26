@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { loans } from "@/mocks/loans";
-import { payLines, payRuns } from "@/mocks/payroll";
+import type { TLoan } from "@wrs/contract/loan";
+
+import { getMeSummary } from "@/services/me";
 import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Me" } });
@@ -8,56 +9,55 @@ definePage({ meta: { title: "Me" } });
 const authStore = useAuthStore();
 const router = useRouter();
 
-function payRunFor(runId: string) {
-  return payRuns.find((run) => run.id === runId) ?? null;
-}
+const { data, isLoading, error, reload } = useResource((signal) => getMeSummary(signal));
 
-const myPayLines = computed(() => payLines.filter((line) => line.employeeId === authStore.me?.id && payRunFor(line.runId)?.status === "finalized"));
-const myLoans = computed(() => loans.filter((loan) => loan.employeeId === authStore.me?.id));
+const payslips = computed(() => data.value?.payslips ?? []);
+const loans = computed(() => data.value?.loans ?? []);
 
-function payLineTitle(runId: string) {
-  const period = payRunFor(runId);
-
-  return period ? formatPeriod(period.periodStart, period.periodEnd) : runId;
-}
-
-const payslipColumns: { key: string; label: string; align?: "left" | "right" }[] = [
+const payslipColumns = [
   { key: "period", label: "Period" },
-  { key: "net", label: "Net pay", align: "right" },
+  { key: "net", label: "Net pay", align: "right" as const },
 ];
 
-const payslipRows = computed(() => myPayLines.value.map((line) => ({ ...line, period: payLineTitle(line.runId) })));
-
-const loanColumns: { key: string; label: string; align?: "left" | "right" }[] = [
+const loanColumns = [
   { key: "type", label: "Type" },
-  { key: "term", label: "Term" },
-  { key: "principal", label: "Principal", align: "right" },
+  { key: "principal", label: "Principal", align: "right" as const },
+  { key: "balance", label: "Balance", align: "right" as const },
+  { key: "nextInstallment", label: "Next installment" },
   { key: "status", label: "Status" },
 ];
 
-const loanRows = computed(() =>
-  myLoans.value.map((loan) => ({ ...loan, type: loan.type === "advance" ? "Advance" : "Loan", term: `${loan.termMonths} month(s)` }))
-);
+const isSheetOpen = ref(false);
 
-const sheetOpen = ref(false);
+function hasBalance({ status }: TLoan) {
+  return status === "released" || status === "paid";
+}
 </script>
 
 <template>
   <div class="flex flex-col gap-4">
     <UiPageHeader title="Me" :subtitle="authStore.meName">
       <template #actions>
-        <UiButton @click="sheetOpen = true">Request advance or loan</UiButton>
+        <UiButton @click="isSheetOpen = true">Request advance or loan</UiButton>
       </template>
     </UiPageHeader>
+
+    <UiStatCard v-if="data != null" label="Paid time off" :hint="`${data.pto.used} of ${data.pto.allowance} days used in ${data.pto.year}`">
+      {{ data.pto.remaining }} days left
+    </UiStatCard>
 
     <UiDataTable
       clickable
       title="Payslips"
       :columns="payslipColumns"
-      :rows="payslipRows"
+      :rows="payslips"
       :row-key="(row) => row.runId"
+      :is-loading="isLoading"
+      :error="error?.message"
+      @retry="reload"
       @row-click="(row) => router.push(ROUTES.ME.PAYSLIP(row.runId))"
     >
+      <template #cell-period="{ row }">{{ formatPeriod(row.periodStart, row.periodEnd) }}</template>
       <template #cell-net="{ row }">
         <UiMoneyText :centavos="row.net" />
       </template>
@@ -66,9 +66,32 @@ const sheetOpen = ref(false);
       </template>
     </UiDataTable>
 
-    <UiDataTable title="Loans and advances" :columns="loanColumns" :rows="loanRows" :row-key="(row) => row.id">
+    <UiDataTable
+      title="Loans and advances"
+      :columns="loanColumns"
+      :rows="loans"
+      :row-key="(row) => row.id"
+      :is-loading="isLoading"
+      :error="error?.message"
+      @retry="reload"
+    >
+      <template #cell-type="{ row }">
+        {{ LOAN_TYPE_LABEL[row.type] }}
+        <span v-if="row.termMonths != null" class="block text-sm text-zinc-500">{{ row.termMonths }} month(s)</span>
+      </template>
       <template #cell-principal="{ row }">
         <UiMoneyText :centavos="row.principal" />
+      </template>
+      <template #cell-balance="{ row }">
+        <UiMoneyText v-if="hasBalance(row)" :centavos="row.balance" />
+        <template v-else>—</template>
+      </template>
+      <template #cell-nextInstallment="{ row }">
+        <template v-if="row.nextInstallment != null">
+          {{ formatDate(row.nextInstallment.due) }}
+          <UiMoneyText :centavos="row.nextInstallment.principalPart + row.nextInstallment.interestPart" size="sm" tone="muted" />
+        </template>
+        <template v-else>—</template>
       </template>
       <template #cell-status="{ row }">
         <UiStatusPill :tone="LOAN_STATUS_TONE[row.status]">{{ LOAN_STATUS_LABEL[row.status] }}</UiStatusPill>
@@ -78,6 +101,6 @@ const sheetOpen = ref(false);
       </template>
     </UiDataTable>
 
-    <LoanRequestSheet v-model:open="sheetOpen" />
+    <LoanRequestSheet v-model:open="isSheetOpen" @submit="reload" />
   </div>
 </template>

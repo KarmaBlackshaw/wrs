@@ -1,6 +1,5 @@
 import type { TProduct } from "@wrs/contract/product";
 
-import { products as mockProducts } from "@/mocks/products";
 import { listProducts } from "@/services/product";
 
 export const useProductStore = defineStore("product", () => {
@@ -20,13 +19,5 @@ export const useProductStore = defineStore("product", () => {
     await refresh();
   }
 
-  function findProduct(id: string) {
-    return mockProducts.find((product) => product.id === id);
-  }
-
-  function productName(id: string) {
-    return findProduct(id)?.name ?? "Unknown";
-  }
-
-  return { products, load, refresh, findProduct, productName };
+  return { products, load, refresh };
 });

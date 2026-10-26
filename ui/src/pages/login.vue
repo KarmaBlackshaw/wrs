@@ -19,6 +19,7 @@ const username = ref("");
 const password = ref("");
 const errorMessage = ref<string>();
 const isSubmitting = ref(false);
+const isOnline = useOnline();
 const roleHeading = useTemplateRef("roleHeading");
 
 const isPickingRole = computed(() => authStore.me != null && authStore.activeRole == null);
@@ -69,7 +70,7 @@ function pickRole(role: TRole) {
 }
 
 function back() {
-  authStore.logout();
+  authStore.logout({ isForced: true });
   password.value = "";
 }
 </script>
@@ -93,8 +94,9 @@ function back() {
     <form v-if="!isPickingRole" class="flex flex-col gap-4" @submit.prevent="submit">
       <UiField v-model="username" label="Username" autocomplete="username" autocapitalize="none" spellcheck="false" />
       <UiField v-model="password" label="Password" type="password" autocomplete="current-password" />
+      <p v-if="!isOnline" role="status" class="text-sm text-amber-700">Connect to log in</p>
       <p v-if="errorMessage" role="alert" class="text-sm text-red-700">{{ errorMessage }}</p>
-      <UiButton type="submit" size="lg" block :loading="isSubmitting">Log in</UiButton>
+      <UiButton type="submit" size="lg" block :loading="isSubmitting" :disabled="!isOnline">Log in</UiButton>
     </form>
 
     <div v-else-if="authStore.me" class="flex flex-col gap-3">

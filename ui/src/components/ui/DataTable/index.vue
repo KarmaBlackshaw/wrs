@@ -24,8 +24,9 @@ const emit = defineEmits<{
 }>();
 
 const allColumns = computed(() => (rowActions ? [...columns, { key: "actions", label: "", align: "right" as const }] : columns));
-const count = computed(() => (isLoading ? undefined : (total ?? rows.length)));
-const collapsed = computed(() => rows.some((row) => (rowActions?.(row).length ?? 0) > 2));
+const count = computed(() => (isLoading || error ? undefined : (total ?? rows.length)));
+const isWide = useMediaQuery("(min-width: 640px)");
+const collapsed = computed(() => !isWide.value || rows.some((row) => (rowActions?.(row).length ?? 0) > 2));
 </script>
 
 <template>

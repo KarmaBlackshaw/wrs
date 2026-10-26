@@ -1,23 +1,38 @@
+import { randomUUID } from "node:crypto";
 import type { Knex } from "knex";
-import { EMPLOYEE, id } from "./ids/index.ts";
+import { move } from "../src/domain/container.ts";
+import { makeCtx } from "../src/lib/context/makeCtx.ts";
+import { historyWindow } from "./ids/history.ts";
+import { EMPLOYEE } from "./ids/index.ts";
 
 export async function seed(knex: Knex) {
-  const created_at = new Date();
+  const { masterDataAt } = historyWindow();
 
-  const opening = {
-    type: "purchased",
-    full: false,
-    from_location: "external",
-    to_location: "station",
-    reason: "Opening stock",
-    created_by: EMPLOYEE.owner,
-    created_at,
-  };
+  const ctx = makeCtx({
+    db: knex,
+    actor: { id: EMPLOYEE.owner, name: "Owner", roles: ["owner"], activeRole: "owner" },
+    now: masterDataAt,
+    mode: "strict",
+  });
 
   await knex("container_movements").del();
 
-  await knex("container_movements").insert([
-    { id: id(7, 1), container_type: "round", qty: 200, ...opening },
-    { id: id(7, 2), container_type: "slim", qty: 80, ...opening },
-  ]);
+  for (const [containerType, qty] of [
+    ["round", 200],
+    ["slim", 80],
+  ] as const) {
+    await move(ctx, {
+      containerType,
+      qty,
+      isFull: false,
+      from: { kind: "external", id: null },
+      to: { kind: "station", id: null },
+      type: "purchased",
+      refType: "opening",
+      refId: randomUUID(),
+      reason: "Opening stock",
+    });
+  }
+
+  await knex("container_movements").where({ ref_type: "opening" }).update({ updated_at: masterDataAt });
 }

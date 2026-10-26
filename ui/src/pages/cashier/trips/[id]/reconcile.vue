@@ -1,92 +1,115 @@
 <script setup lang="ts">
+import sumBy from "lodash/sumBy";
+import type { TDelivery, TTripDetail } from "@wrs/contract/trip";
+import { getTrip, reconcileTrip } from "@/services/trip";
 import { ROUTES, type TRowAction } from "@/types";
 
 definePage({ meta: { title: "Reconcile trip", roles: ["cashier", "owner"] } });
-
-const customerStore = useCustomerStore();
-const productStore = useProductStore();
 
 const route = useRoute<"/cashier/trips/[id]/reconcile">();
 const router = useRouter();
 const toast = useToast();
 const authStore = useAuthStore();
 
-const summary = tripSummary(route.params.id);
+const tripId = route.params.id;
+
+const { data: trip, isLoading, error: loadError, reload } = useResource((signal) => getTrip(tripId, signal));
+const { run, isRunning, error } = useAction(reconcileTrip);
 
 const tripsHomeRoute = computed(() => (authStore.activeRole === "owner" ? ROUTES.OWNER.TRIPS : ROUTES.CASHIER.TRIPS.INDEX));
 
-const hasVariance = computed(() => summary.fullVariance !== 0 || summary.emptyVariance !== 0 || summary.cashVariance !== 0);
+const isReconcilable = computed(() => trip.value?.status === "returned");
 
-const suggestedShortageCash = computed(() => Math.max(0, -summary.cashVariance));
-const shortageSheetOpen = ref(false);
-const initialShortageContainers = Math.max(0, -summary.fullVariance);
+const fullVariance = computed(() => sumBy(trip.value?.lines, ({ varianceFull }) => varianceFull ?? 0));
+const emptyVariance = computed(() => sumBy(trip.value?.lines, ({ varianceEmpty }) => varianceEmpty ?? 0));
+const cashVariance = computed(() => trip.value?.cashVariance ?? 0);
 
-const voidSheetOpen = ref(false);
-const voidTargetSummary = ref("");
+const hasVariance = computed(() => fullVariance.value !== 0 || emptyVariance.value !== 0 || cashVariance.value !== 0);
+
+const canRecordShortage = computed(
+  () => (trip.value?.status === "returned" || trip.value?.status === "reconciled") && hasVariance.value && !trip.value?.hasShortage
+);
+
+const shortageTrip = ref<TTripDetail>();
+const voidTarget = ref<{ refType: "delivery"; refId: string; summary: string }>();
 
 const productColumns: { key: string; label: string; align?: "left" | "right" }[] = [
-  { key: "product", label: "Product" },
+  { key: "productName", label: "Product" },
   { key: "full", label: "Full" },
   { key: "empty", label: "Empty" },
 ];
 
-const productRows = summary.perProduct.map((line) => ({ ...line, product: productStore.productName(line.productId) }));
-
 const deliveryColumns: { key: string; label: string; align?: "left" | "right" }[] = [
-  { key: "customer", label: "Customer" },
-  { key: "delivered", label: "Delivered", align: "right" },
+  { key: "customerName", label: "Customer" },
+  { key: "products", label: "Products" },
+  { key: "payment", label: "Payment" },
   { key: "amount", label: "Amount", align: "right" },
 ];
 
-const deliveryRows = summary.deliveries.map((delivery) => ({ ...delivery, customer: customerStore.customerName(delivery.customerId) }));
-
-function openVoid(delivery: (typeof summary.deliveries)[number]) {
-  voidTargetSummary.value = `Delivery to ${customerStore.customerName(delivery.customerId)}, ${delivery.delivered} delivered, ${formatMoney(delivery.amount)}`;
-  voidSheetOpen.value = true;
+function productsText(delivery: TDelivery) {
+  return delivery.lines.map(({ productName, qty }) => `${qty} x ${productName}`).join(", ");
 }
 
-function reconcile() {
+function openVoid(delivery: TDelivery) {
+  voidTarget.value = {
+    refType: "delivery",
+    refId: delivery.id,
+    summary: `Delivery to ${delivery.customerName}, ${productsText(delivery)}, ${formatMoney(delivery.amount)}`,
+  };
+}
+
+async function reconcile() {
+  await run(tripId);
+
+  if (error.value != null) {
+    return;
+  }
+
   toast.show("Saved");
   router.push(tripsHomeRoute.value);
 }
 
-function deliveryActions(delivery: (typeof deliveryRows)[number]): TRowAction[] {
-  return [{ label: "Request void", variant: "ghost", onSelect: () => openVoid(delivery) }];
+function deliveryActions(delivery: TDelivery): TRowAction[] {
+  return delivery.voidedAt == null ? [{ label: "Request void", variant: "ghost", onSelect: () => openVoid(delivery) }] : [];
 }
 </script>
 
 <template>
-  <UiEmptyState v-if="!summary.trip" title="Trip not found" description="It may not exist.">
+  <UiEmptyState v-if="loadError != null" title="Couldn't load" :description="loadError.message">
     <template #action>
-      <UiButton :to="tripsHomeRoute">Back to trips</UiButton>
+      <UiButton variant="secondary" @click="reload">Retry</UiButton>
     </template>
   </UiEmptyState>
 
-  <div v-else class="flex flex-col gap-4">
-    <UiPageHeader title="Reconcile trip" :subtitle="`Loaded ${formatDateTime(summary.trip.loadedAt)}`" :back="tripsHomeRoute">
+  <div v-else-if="trip != null" class="flex flex-col gap-4">
+    <UiPageHeader title="Reconcile trip" :subtitle="`Loaded ${formatDateTime(trip.loadedAt)}`" :back="tripsHomeRoute">
       <template #actions>
-        <UiStatusPill :tone="TRIP_STATUS_TONE[summary.trip.status]">{{ TRIP_STATUS_LABEL[summary.trip.status] }}</UiStatusPill>
-        <UiButton v-if="summary.trip.status !== 'reconciled'" @click="reconcile">Reconcile</UiButton>
+        <UiStatusPill :tone="TRIP_STATUS_TONE[trip.status]">{{ TRIP_STATUS_LABEL[trip.status] }}</UiStatusPill>
+        <UiButton v-if="isReconcilable" :loading="isRunning" @click="reconcile">Reconcile</UiButton>
       </template>
     </UiPageHeader>
 
-    <UiDataTable :columns="productColumns" :rows="productRows" :row-key="(row) => row.productId">
+    <p v-if="error != null" role="alert" class="text-sm text-red-700">{{ error.message }}</p>
+
+    <UiDataTable :columns="productColumns" :rows="trip.lines" :row-key="(row) => row.productId">
       <template #cell-full="{ row }">
-        <UiVariancePill :value="row.fullVariance" />
+        <UiVariancePill v-if="row.varianceFull != null" :value="row.varianceFull" />
       </template>
       <template #cell-empty="{ row }">
-        <UiVariancePill :value="row.emptyVariance" />
+        <UiVariancePill v-if="row.varianceEmpty != null" :value="row.varianceEmpty" />
       </template>
     </UiDataTable>
 
     <UiCard title="Cash">
       <div class="flex items-center justify-between">
-        <span class="text-sm text-zinc-500">Expected <UiMoneyText :centavos="summary.expectedCash" size="sm" /></span>
-        <UiVariancePill :value="summary.cashVariance" is-money />
+        <span class="text-sm text-zinc-500">Expected <UiMoneyText :centavos="trip.expectedCash" size="sm" /></span>
+        <UiVariancePill v-if="trip.cashVariance != null" :value="trip.cashVariance" is-money />
       </div>
     </UiCard>
 
-    <UiDataTable :row-actions="deliveryActions" title="Deliveries" :columns="deliveryColumns" :rows="deliveryRows" :row-key="(row) => row.id">
+    <UiDataTable :row-actions="deliveryActions" title="Deliveries" :columns="deliveryColumns" :rows="trip.deliveries" :row-key="(row) => row.id">
+      <template #cell-products="{ row }">{{ productsText(row) }}</template>
+      <template #cell-payment="{ row }">{{ PAYMENT_LABEL[row.paymentType] }}</template>
       <template #cell-amount="{ row }">
         <UiMoneyText :centavos="row.amount" />
       </template>
@@ -95,10 +118,12 @@ function deliveryActions(delivery: (typeof deliveryRows)[number]): TRowAction[] 
       </template>
     </UiDataTable>
 
-    <UiButton v-if="hasVariance" variant="secondary" @click="shortageSheetOpen = true">Record shortage</UiButton>
+    <UiButton v-if="canRecordShortage" variant="secondary" @click="shortageTrip = trip">Record shortage</UiButton>
 
-    <TripShortageSheet v-model:open="shortageSheetOpen" :suggested-shortage-cash="suggestedShortageCash" :initial-containers="initialShortageContainers" />
+    <TripShortageSheet v-model:trip="shortageTrip" @submit="reload" />
 
-    <VoidRequestSheet v-model:open="voidSheetOpen" :summary="voidTargetSummary" />
+    <VoidRequestSheet v-model:target="voidTarget" @submit="reload" />
   </div>
+
+  <UiPageHeader v-else-if="isLoading" title="Reconcile trip" :back="tripsHomeRoute" />
 </template>

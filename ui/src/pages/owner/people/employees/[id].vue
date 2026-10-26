@@ -38,6 +38,7 @@ const absenceColumns = [
 ];
 
 const editOpen = ref(false);
+const absenceOpen = ref(false);
 </script>
 
 <template>
@@ -56,6 +57,7 @@ const editOpen = ref(false);
   <div v-else-if="employee != null" class="flex flex-col gap-4">
     <UiPageHeader :title="fullName(employee)" :subtitle="employee.phone ?? undefined" :back="backTo">
       <template #actions>
+        <UiButton size="md" variant="secondary" @click="absenceOpen = true">Mark absent</UiButton>
         <UiStatusPill :tone="employee.active ? 'ok' : 'neutral'">{{ employee.active ? "Active" : "Inactive" }}</UiStatusPill>
       </template>
     </UiPageHeader>
@@ -110,6 +112,7 @@ const editOpen = ref(false);
       </template>
     </UiDataTable>
 
+    <EmployeeAbsenceSheet v-model:open="absenceOpen" :employee-id="employee.id" @submit="reload()" />
     <EmployeePayPlanSheet v-model:open="editOpen" :employee-id="employee.id" :current-plan="latestPlan" @submit="reload()" />
   </div>
 

@@ -9,6 +9,8 @@ import type {
   TCustomerWaiverBody,
   TOwnershipEvent,
 } from "@wrs/contract/customer";
+import { creditBlock } from "@wrs/contract/rules/creditBlock";
+import { depositDue as contractDepositDue } from "@wrs/contract/rules/depositDue";
 import { dueStatus } from "@wrs/contract/rules/dueStatus";
 import { isEarlyRelease } from "@wrs/contract/rules/isEarlyRelease";
 import type { Knex } from "knex";
@@ -18,6 +20,7 @@ import { manilaToday } from "../lib/dates/manilaToday.ts";
 import { domainError } from "../lib/errors/domainError.ts";
 import { paginate } from "../lib/page/paginate.ts";
 import { fullNameSql } from "../lib/sql/fullNameSql.ts";
+import { listContainerTypes } from "./container-type.ts";
 
 type TDb = TCtx["db"];
 
@@ -26,6 +29,10 @@ export type TCustomerRow = Omit<TCustomer, "heldByType" | "creditLimit" | "dueSt
   oldestUnpaidOn: string | null;
   settingCreditLimit: number | null;
   today: string;
+  coveringRiderId: string | null;
+  coveringRiderName: string | null;
+  coverageFrom: string | null;
+  coverageUntil: string | null;
 };
 
 const SETTING_CREDIT_LIMIT_SQL =
@@ -127,6 +134,20 @@ export const customerBalancesQuery = (db: TDb) => {
     );
 };
 
+const coverageQuery = (db: TDb, today: string) =>
+  db("coverageAssignments as ca")
+    .join("absences as a", "a.id", "ca.absenceId")
+    .join("employees as cr", "cr.id", "ca.coveringRiderId")
+    .where("a.to", ">=", today)
+    .select(
+      "ca.customerId",
+      "ca.coveringRiderId",
+      db.raw(`${fullNameSql("cr")} as covering_rider_name`),
+      "a.from as coverageFrom",
+      "a.to as coverageUntil",
+      db.raw("row_number() over (partition by ca.customer_id order by a.from, a.id) as coverage_rank")
+    );
+
 export const customerQuery = (ctx: TCtx) => {
   const { db, now } = ctx;
   const today = manilaToday(now);
@@ -134,6 +155,7 @@ export const customerQuery = (ctx: TCtx) => {
   return db("customers as c")
     .join(customerBalancesQuery(db).as("b"), "b.customerId", "c.id")
     .leftJoin("employees as r", "r.id", "c.riderId")
+    .leftJoin(coverageQuery(db, today).as("cv"), (join) => join.on("cv.customerId", "c.id").andOnVal("cv.coverageRank", 1))
     .select(
       "c.id",
       "c.firstName",
@@ -157,17 +179,33 @@ export const customerQuery = (ctx: TCtx) => {
       "b.oldestUnpaidOn",
       db.raw(SETTING_CREDIT_LIMIT_SQL, [now]),
       db.raw("? as today", [today]),
+      "cv.coveringRiderId",
+      "cv.coveringRiderName",
+      "cv.coverageFrom",
+      "cv.coverageUntil",
       "c.createdAt",
       "c.updatedAt"
     );
 };
 
-export const toCustomer = ({ oldestUnpaidOn, settingCreditLimit, today, ...row }: TCustomerRow): TCustomer => ({
+export const toCustomer = ({
+  oldestUnpaidOn,
+  settingCreditLimit,
+  today,
+  coveringRiderId,
+  coveringRiderName,
+  coverageFrom,
+  coverageUntil,
+  ...row
+}: TCustomerRow): TCustomer => ({
   ...row,
   heldByType: { round: 0, slim: 0, ...row.heldByType },
   creditLimit: row.creditLimitOverride ?? settingCreditLimit,
   dueStatus: dueStatus(row, today),
-  coverage: null,
+  coverage:
+    coveringRiderId != null && coveringRiderName != null && coverageFrom != null && coverageUntil != null
+      ? { coveringRiderId, coveringRiderName, from: coverageFrom, until: coverageUntil }
+      : null,
 });
 
 export const listCustomers = async (ctx: TCtx, { page, pageSize, q, scope, show, riderId, balance, aging }: TCustomerListQuery): Promise<TPage<TCustomer>> => {
@@ -384,4 +422,32 @@ export const setCustomerDepositWaiver = async (ctx: TCtx, id: string, { waived }
   await ctx.db("customers").where({ id }).update({ depositWaived: waived });
 
   return getCustomer(ctx, id);
+};
+
+const creditMessages = {
+  "credit.not_enabled": "Credit is not enabled for this customer.",
+  "credit.over_limit": "This would put the customer over their credit limit.",
+  "setting.not_set": "The default credit limit is not set.",
+};
+
+export const assertCredit = async (ctx: TCtx, { customerId, amount }: { customerId: string; amount: number }) => {
+  await lockCustomer(ctx, customerId);
+
+  const customer = await getCustomer(ctx, customerId);
+  const code = creditBlock(customer, amount);
+
+  if (code) {
+    ctx.violation(code, creditMessages[code], { customerId, amount, creditBalance: customer.creditBalance, creditLimit: customer.creditLimit });
+  }
+};
+
+export const depositDue = async (
+  ctx: TCtx,
+  { customerId, borrowed }: { customerId: string; borrowed: { containerType: TContainerTypeCode; qty: number }[] }
+) => {
+  await lockCustomer(ctx, customerId);
+
+  const [customer, containerTypes] = await Promise.all([getCustomer(ctx, customerId), listContainerTypes(ctx)]);
+
+  return contractDepositDue({ customer, containerTypes, borrowed });
 };

@@ -4,7 +4,6 @@ export const ROUTES = {
   RIDER: {
     INDEX: "/rider",
     CUSTOMERS: "/rider/customers",
-    CUSTOMERS_OPEN: "/rider/customers/open",
     CUSTOMERS_ALL: "/rider/customers/all",
     TRIP_RETURN: (tripId: string) => `/rider/trip/${tripId}/return`,
     DELIVER: (tripId: string, customerId?: string) => `/rider/trip/${tripId}/deliver${customerId ? `/${customerId}` : ""}`,
@@ -37,6 +36,7 @@ export const ROUTES = {
   OWNER: {
     INDEX: "/owner",
     APPROVALS: "/owner/approvals",
+    APPROVALS_HANDLED: "/owner/approvals/handled",
     SALES: "/owner/sales",
     TRIPS: "/owner/trips",
     CUSTOMERS: {
@@ -81,15 +81,20 @@ export const ROUTES = {
   },
 } as const;
 
+export type TRiderCustomerScope = "mine" | "all";
+
 export const RIDER_TABS = {
   CUSTOMERS: [
     { label: "Mine", to: ROUTES.RIDER.CUSTOMERS },
-    { label: "Open", to: ROUTES.RIDER.CUSTOMERS_OPEN },
     { label: "All", to: ROUTES.RIDER.CUSTOMERS_ALL },
   ],
 };
 
 export const OWNER_TABS = {
+  APPROVALS: [
+    { label: "Pending", to: ROUTES.OWNER.APPROVALS },
+    { label: "Handled", to: ROUTES.OWNER.APPROVALS_HANDLED },
+  ],
   CONTAINERS: [
     { label: "Holdings", to: ROUTES.OWNER.CONTAINERS.INDEX },
     { label: "Movement log", to: ROUTES.OWNER.CONTAINERS.MOVEMENTS },

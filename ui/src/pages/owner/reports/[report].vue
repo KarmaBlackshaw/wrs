@@ -1,69 +1,108 @@
 <script setup lang="ts">
+import type { TReportSlug, TReportTable } from "@wrs/contract/report";
+
 import { IconClipboardText } from "@/components";
 import { REPORTS } from "@/constants/reports";
+import { getReport, getReportCsv } from "@/services/report";
 import { ROUTES } from "@/types";
 
 definePage({ meta: { title: "Report" } });
 
 const route = useRoute("/owner/reports/[report]");
-const toast = useToast();
+const fileDownload = useFileDownload();
 
-const report = computed(() => REPORTS.find((candidate) => candidate.slug === route.params.report) ?? null);
+const MONTHLY_PROFIT: TReportSlug = "monthly-profit";
 
-const dateFrom = ref("2026-09-01");
-const dateTo = ref("2026-09-30");
+const { from, to, range: urlRange, label: dateLabel, clear: clearDates } = useDateRangeQuery();
 
-const table = computed(() => (report.value ? buildReportTable(report.value.slug) : null));
+const report = computed(() => REPORTS.find((candidate) => candidate.slug === route.params.report));
+const slug = computed(() => report.value?.slug);
+const isMonthly = computed(() => slug.value === MONTHLY_PROFIT);
 
-const filteredRows = computed(() => {
-  if (!table.value) {
-    return [];
-  }
+const month = computed({
+  get: () => from.value.slice(0, 7) || toManila(Date.now()).format("YYYY-MM"),
+  set: (value) => {
+    if (!value) {
+      return;
+    }
 
-  return table.value.rows
-    .filter((row) => {
-      const date = row._date?.slice(0, 10);
-
-      return !date || ((!dateFrom.value || date >= dateFrom.value) && (!dateTo.value || date <= dateTo.value));
-    })
-    .map((row, index) => ({ ...row, _rowId: index }));
+    from.value = `${value}-01`;
+    to.value = toManila(`${value}-01`).endOf("month").format("YYYY-MM-DD");
+  },
 });
 
-const dateLabel = computed(() => {
-  if (dateFrom.value && dateTo.value) {
-    return formatPeriod(dateFrom.value, dateTo.value);
+const range = computed(() => {
+  if (isMonthly.value) {
+    const [first, last] = [`${month.value}-01`, toManila(`${month.value}-01`).endOf("month").format("YYYY-MM-DD")];
+
+    return { from: first, to: last };
   }
 
-  if (dateFrom.value) {
-    return `From ${formatDate(dateFrom.value)}`;
-  }
-
-  return dateTo.value && `Until ${formatDate(dateTo.value)}`;
+  return urlRange.value;
 });
 
-function clearDates() {
-  dateFrom.value = "";
-  dateTo.value = "";
-}
+const { data, isLoading, error, reload } = useResource(
+  async (signal) => {
+    if (slug.value == null) {
+      return undefined;
+    }
 
-function exportCsv() {
-  toast.show("Export ready (demo)");
+    return getReport({ slug: slug.value, range: range.value }, signal);
+  },
+  { watch: [slug, range] }
+);
+
+const columns = computed(() => data.value?.columns ?? []);
+
+const rows = computed<(TReportTable["rows"][number] & { rowId: number })[]>(() => {
+  const reportRows: TReportTable["rows"] = data.value?.rows ?? [];
+
+  return reportRows.map((row, index) => ({ ...row, rowId: index }));
+});
+
+const isExporting = ref(false);
+
+async function exportCsv() {
+  if (slug.value == null) {
+    return;
+  }
+
+  const reportSlug = slug.value;
+  const { from: start, to: end } = range.value;
+  const filename = `${[reportSlug, start, end].filter((part) => part != null).join("_")}.csv`;
+
+  isExporting.value = true;
+  await fileDownload.download(() => getReportCsv(reportSlug, range.value), filename);
+  isExporting.value = false;
 }
 </script>
 
 <template>
-  <div v-if="report && table" class="flex flex-col gap-4">
-    <UiDataTable :title="report.title" :icon="IconClipboardText" :columns="table.columns" :rows="filteredRows" :row-key="(row) => row._rowId">
+  <div v-if="slug" class="flex flex-col gap-4">
+    <UiDataTable
+      :title="report?.title"
+      :icon="IconClipboardText"
+      :columns="columns"
+      :rows="rows"
+      :row-key="(row) => row.rowId"
+      :is-loading="isLoading"
+      :error="error?.message"
+      @retry="reload"
+    >
       <template #actions>
-        <UiButton variant="secondary" @click="exportCsv">Export CSV</UiButton>
+        <UiField v-if="isMonthly" v-model="month" label="Month" type="month" />
+        <UiButton variant="secondary" :loading="isExporting" @click="exportCsv">Export CSV</UiButton>
       </template>
-      <template #filters>
+      <template v-if="!isMonthly" #filters>
         <UiFilterChip label="Date" :value="dateLabel" @clear="clearDates">
           <div class="grid grid-cols-2 gap-3">
-            <UiField v-model="dateFrom" label="From" type="date" :max="dateTo || undefined" />
-            <UiField v-model="dateTo" label="To" type="date" :min="dateFrom || undefined" />
+            <UiField v-model="from" label="From" type="date" :max="to || undefined" />
+            <UiField v-model="to" label="To" type="date" :min="from || undefined" />
           </div>
         </UiFilterChip>
+      </template>
+      <template v-for="column in columns" :key="column.key" #[`cell-${column.key}`]="{ row }">
+        {{ formatReportCell(row[column.key] ?? null, column.format) }}
       </template>
       <template #empty>
         <UiEmptyState title="No rows in this range" description="Widen the date range to see more results." />
