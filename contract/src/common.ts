@@ -58,6 +58,7 @@ export const errorCodeSchema = z.enum([
   "trip.over_remaining",
   "product.not_deliverable",
   "container.station_short",
+  "customer.not_owner",
   "payment.over_balance",
   "price.changed",
   "meter.below_last",

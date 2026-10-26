@@ -11,9 +11,15 @@ export function applyDelivery(snapshot: TRiderSnapshot, op: Extract<TSyncOp, { k
     return snapshot;
   }
 
+  if (trip.deliveries.some(({ id }) => id === payload.id)) {
+    return snapshot;
+  }
+
   const customer = snapshot.customers.find(({ id }) => id === payload.customerId);
   const amount = payload.lines.reduce((sum, { qty, unitPrice }) => sum + qty * unitPrice, 0);
   const depositAmount = payload.deposit?.lines.reduce((sum, { amount: lineAmount }) => sum + lineAmount, 0) ?? 0;
+
+  const cashAmount = (payload.paymentType === "cash" ? amount : 0) + (payload.deposit?.method === "cash" ? depositAmount : 0);
 
   const delivery: TDelivery = {
     id: payload.id,
@@ -47,6 +53,7 @@ export function applyDelivery(snapshot: TRiderSnapshot, op: Extract<TSyncOp, { k
     ...snapshot,
     trip: {
       ...trip,
+      expectedCash: trip.expectedCash + cashAmount,
       lines: trip.lines.map((line) => {
         const sent = payload.lines.find(({ productId }) => productId === line.productId);
 
@@ -55,6 +62,7 @@ export function applyDelivery(snapshot: TRiderSnapshot, op: Extract<TSyncOp, { k
           : {
               ...line,
               delivered: line.delivered + sent.qty,
+              expectedFull: Math.max(0, line.loaded - (line.delivered + sent.qty)),
               remaining: line.remaining - sent.qty,
               emptiesCollected: line.emptiesCollected + sent.emptiesCollected,
             };

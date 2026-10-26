@@ -10,12 +10,20 @@ export const useRiderStore = defineStore("rider", () => {
   const sync = useSyncStore();
 
   const snapshot = ref<TRiderSnapshot>({ trip: null, customers: [], products: [], containerTypes: [] });
+  const isHydrated = ref(false);
+  const pulledAt = ref<string>();
+
+  const actor = computed(() => (auth.me != null ? { id: auth.me.id, name: fullName(auth.me) } : undefined));
 
   const projected = computed(() =>
-    sync.pending.reduce((current, op) => {
+    sync.outbox.reduce((current, op) => {
+      if (op.settledAt != null && pulledAt.value != null && op.settledAt <= pulledAt.value) {
+        return current;
+      }
+
       switch (op.kind) {
         case "customer.create":
-          return applyCustomerCreate(current, op);
+          return applyCustomerCreate(current, op, actor.value);
         case "customer.release":
           return applyRelease(current, op);
         case "delivery.create":
@@ -55,9 +63,19 @@ export const useRiderStore = defineStore("rider", () => {
       products: record?.products ?? [],
       containerTypes: record?.containerTypes ?? [],
     };
+
+    pulledAt.value = record?.syncedAt;
+
+    isHydrated.value = true;
   }
 
-  async function applySnapshot({ cursor, trip: nextTrip, customers, products: nextProducts, containerTypes: nextContainerTypes }: TSyncSnapshot) {
+  async function applySnapshot({
+    snapshot: { cursor, trip: nextTrip, customers, products: nextProducts, containerTypes: nextContainerTypes },
+    requestedAt,
+  }: {
+    snapshot: TSyncSnapshot;
+    requestedAt: string;
+  }) {
     const db = await openOfflineDb();
     const tx = db.transaction(["snapshot", "customers"], "readwrite");
 
@@ -65,7 +83,7 @@ export const useRiderStore = defineStore("rider", () => {
       tx.objectStore("snapshot").put({
         key: SNAPSHOT_KEY,
         cursor,
-        syncedAt: new Date().toISOString(),
+        syncedAt: requestedAt,
         trip: nextTrip,
         products: nextProducts,
         containerTypes: nextContainerTypes,
@@ -84,6 +102,8 @@ export const useRiderStore = defineStore("rider", () => {
       products: nextProducts,
       containerTypes: nextContainerTypes,
     };
+
+    pulledAt.value = requestedAt;
   }
 
   function search(query: string) {
@@ -102,5 +122,5 @@ export const useRiderStore = defineStore("rider", () => {
     return allCustomers.value.find((entry) => entry.id === id);
   }
 
-  return { hydrate, applySnapshot, trip, myCustomers, allCustomers, search, customer, products, containerTypes };
+  return { isHydrated, hydrate, applySnapshot, trip, myCustomers, allCustomers, search, customer, products, containerTypes };
 });

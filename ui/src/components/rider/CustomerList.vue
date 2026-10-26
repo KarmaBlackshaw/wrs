@@ -1,66 +1,106 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from "vue-router";
+import type { TCustomer } from "@wrs/contract/customer";
+import { dueStatus } from "@wrs/contract/rules/dueStatus";
+import { isEarlyRelease } from "@wrs/contract/rules/isEarlyRelease";
 
 import { IconUsers } from "@/components";
-import { customers } from "@/mocks/customers";
-import { RIDER_TABS, type TCustomer, type TCustomerScope, type TRowAction } from "@/types";
+import { RIDER_TABS, type TRiderCustomerScope, type TRowAction } from "@/types";
 
 const { getTo, scope = "mine" } = defineProps<{
   getTo: (customer: TCustomer) => RouteLocationRaw;
-  scope?: TCustomerScope;
+  scope?: TRiderCustomerScope;
 }>();
 
 const authStore = useAuthStore();
+const riderStore = useRiderStore();
+const syncStore = useSyncStore();
+const { myCustomers, isHydrated } = storeToRefs(riderStore);
 const toast = useToast();
+const confirmDialog = useConfirm();
 const router = useRouter();
 
 const columns = [
   { key: "name", label: "Name" },
-  { key: "phone", label: "Phone" },
-  { key: "address", label: "Address" },
+  { key: "rider", label: "Rider" },
 ];
 
-// ponytail: accepts live only in this component until the API persists them.
-const acceptedIds = ref(new Set<string>());
+const q = useRouteQuery<string>("q", "", { mode: "push" });
+const search = ref(q.value);
 
-function riderOf(customer: TCustomer) {
-  return acceptedIds.value.has(customer.id) ? authStore.me?.id : customer.riderId;
-}
+watchDebounced(
+  search,
+  (value) => {
+    q.value = value;
+  },
+  { debounce: 300 }
+);
 
-const scoped = computed(() => {
-  if (scope === "all") {
-    return customers;
-  }
-
-  const riderId = scope === "mine" ? authStore.me?.id : undefined;
-
-  return customers.filter((customer) => riderOf(customer) === riderId);
+watch(q, (value) => {
+  search.value = value;
 });
 
-const query = ref("");
-const filtered = useCustomerSearch(query, scoped);
+const rows = computed(() => {
+  const matches = riderStore.search(search.value);
 
-const EMPTY_DESCRIPTION: Record<TCustomerScope, string> = {
-  mine: "Accept customers from Open, or switch to All when covering for another rider.",
-  open: "Every customer has a rider.",
-  all: "Try a different name, phone, or address.",
+  if (scope === "all") {
+    return matches;
+  }
+
+  const mineIds = new Set(myCustomers.value.map(({ id }) => id));
+
+  return matches.filter(({ id }) => mineIds.has(id));
+});
+
+const today = todayIso();
+
+const EMPTY_DESCRIPTION: Record<TRiderCustomerScope, string> = {
+  mine: "Add a customer, or switch to All when covering for another rider.",
+  all: "Try a different name, phone, address, or rider.",
 };
 
-function accept(customer: TCustomer) {
-  acceptedIds.value.add(customer.id);
-  toast.show(`${customer.name} added to your customers`);
+const isAddOpen = ref(false);
+
+function activeCoverage({ coverage, riderName }: TCustomer) {
+  if (coverage == null || coverage.coveringRiderId !== authStore.me?.id || coverage.from > today || coverage.until < today) {
+    return undefined;
+  }
+
+  return { riderName: riderName ?? "Open", until: formatDate(coverage.until) };
+}
+
+function dueOf(customer: TCustomer) {
+  return dueStatus(customer, today);
 }
 
 function openCustomer(customer: TCustomer) {
   router.push(getTo(customer));
 }
 
-function acceptAction(customer: TCustomer): TRowAction[] {
-  return [{ label: "Accept", variant: "secondary", onSelect: () => accept(customer) }];
+function releaseMessage(customer: TCustomer, name: string) {
+  return customer.nextDueOn != null && isEarlyRelease(customer, today)
+    ? { message: `Due on ${formatDate(customer.nextDueOn)}. Release ${name} anyway?`, confirmLabel: "Release anyway" }
+    : { message: `Release ${name}? They become open for any rider.`, confirmLabel: "Release" };
 }
 
-const isOpenScope = computed(() => scope === "open");
-const rowActions = computed(() => (isOpenScope.value ? acceptAction : undefined));
+async function release(customer: TCustomer) {
+  const name = fullName(customer);
+  const isEarly = isEarlyRelease(customer, today);
+  const isConfirmed = await confirmDialog.confirm({ title: "Release customer", variant: "danger", ...releaseMessage(customer, name) });
+
+  if (!isConfirmed) {
+    return;
+  }
+
+  await syncStore.enqueue({ kind: "customer.release", payload: { customerId: customer.id, confirmEarly: isEarly } });
+  toast.show(`${name} released`);
+}
+
+function rowActions(customer: TCustomer): TRowAction[] {
+  return customer.riderId != null && customer.riderId === authStore.me?.id
+    ? [{ label: "Release", variant: "secondary", onSelect: () => release(customer) }]
+    : [];
+}
 </script>
 
 <template>
@@ -69,17 +109,35 @@ const rowActions = computed(() => (isOpenScope.value ? acceptAction : undefined)
     :icon="IconUsers"
     :tabs="RIDER_TABS.CUSTOMERS"
     :columns="columns"
-    :rows="filtered"
+    :rows="rows"
+    :is-loading="!isHydrated"
     :row-key="(row) => row.id"
-    :clickable="!isOpenScope"
+    clickable
     :row-actions="rowActions"
     @row-click="openCustomer"
   >
     <template #actions>
-      <UiSearchInput v-model="query" label="Search customers by name, phone, or address" />
+      <UiSearchInput v-model="search" label="Search customers by name, phone, address, or rider" />
+      <UiButton @click="isAddOpen = true">Add customer</UiButton>
     </template>
+    <template #cell-name="{ row }">
+      <span class="block">{{ fullName(row) }}</span>
+      <span class="block max-w-72 text-sm whitespace-normal text-zinc-500">{{ row.phone }} · {{ row.address }}</span>
+      <span class="mt-1 flex flex-wrap gap-1">
+        <UiStatusPill v-if="row.status === 'pending'" tone="neutral">Pending</UiStatusPill>
+        <UiStatusPill v-if="dueOf(row) === 'due'" tone="warn">Due</UiStatusPill>
+        <UiStatusPill v-else-if="dueOf(row) === 'overdue'" tone="danger">Overdue</UiStatusPill>
+        <UiStatusPill v-if="activeCoverage(row) != null" tone="info">
+          Covering for {{ activeCoverage(row)?.riderName }}
+          <span class="hidden sm:inline">until {{ activeCoverage(row)?.until }}</span>
+        </UiStatusPill>
+      </span>
+    </template>
+    <template #cell-rider="{ row }">{{ row.riderName ?? "Open" }}</template>
     <template #empty>
       <UiEmptyState title="No customers found" :description="EMPTY_DESCRIPTION[scope]" />
     </template>
   </UiDataTable>
+
+  <CustomerAddSheet v-model:open="isAddOpen" is-rider-mode />
 </template>

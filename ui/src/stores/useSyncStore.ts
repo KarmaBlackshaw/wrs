@@ -1,3 +1,4 @@
+import cloneDeep from "lodash/cloneDeep";
 import type { TSyncOp } from "@wrs/contract/sync";
 
 import { ApiError } from "@/lib/http";
@@ -13,7 +14,7 @@ const RETRY_MS = 30_000;
 const PULL_MS = 60_000;
 const OUTDATED_APP_MESSAGE = "Update the app";
 
-function toOp({ seq, state, lastError, ...op }: TOutboxRecord): TSyncOp {
+function toOp({ seq, state, lastError, settledAt, ...op }: TOutboxRecord): TSyncOp {
   return op;
 }
 
@@ -21,9 +22,11 @@ export const useSyncStore = defineStore("sync", () => {
   const rider = useRiderStore();
   const isOnline = useOnline();
 
-  const pending = ref<TOutboxRecord[]>([]);
+  const outbox = ref<TOutboxRecord[]>([]);
   const conflicts = ref<TConflictRecord[]>([]);
   const isSyncing = ref(false);
+
+  const pending = computed(() => outbox.value.filter(({ settledAt }) => settledAt == null));
 
   const status = computed(() => {
     if (!isOnline.value) {
@@ -46,9 +49,9 @@ export const useSyncStore = defineStore("sync", () => {
   });
 
   async function loadOutbox(db: TOfflineDb) {
-    const [outbox, conflictRecords] = await Promise.all([db.getAllFromIndex("outbox", "seq"), db.getAll("conflicts")]);
+    const [records, conflictRecords] = await Promise.all([db.getAllFromIndex("outbox", "seq"), db.getAll("conflicts")]);
 
-    pending.value = outbox;
+    outbox.value = records;
     conflicts.value = conflictRecords;
   }
 
@@ -59,8 +62,9 @@ export const useSyncStore = defineStore("sync", () => {
   }
 
   async function pushBatch(db: TOfflineDb) {
-    const outbox = await db.getAllFromIndex("outbox", "seq");
-    const batch = outbox.filter(({ state }) => state === "pending").slice(0, BATCH_SIZE);
+    const unsettled = (await db.getAllFromIndex("outbox", "seq")).filter(({ settledAt }) => settledAt == null);
+    const firstFailed = unsettled.findIndex(({ state }) => state === "failed");
+    const batch = (firstFailed === -1 ? unsettled : unsettled.slice(0, firstFailed)).filter(({ state }) => state === "pending").slice(0, BATCH_SIZE);
 
     if (batch.length === 0) {
       return false;
@@ -71,6 +75,7 @@ export const useSyncStore = defineStore("sync", () => {
     try {
       const { results } = await pushOps({ ops: batch.map(toOp) });
       const settled = new Map(results.map((result) => [result.opId, result]));
+      const settledAt = new Date().toISOString();
       const tx = db.transaction(["outbox", "conflicts"], "readwrite");
 
       await Promise.all([
@@ -81,11 +86,16 @@ export const useSyncStore = defineStore("sync", () => {
             return tx.objectStore("outbox").put({ ...record, state: "pending" });
           }
 
+          const settle = tx.objectStore("outbox").put({ ...record, state: "pending", settledAt });
+
           if (result.status === "conflict") {
-            tx.objectStore("conflicts").put({ opId: record.opId, op: toOp(record), codes: result.codes ?? [], conflictId: result.conflictId });
+            return Promise.all([
+              settle,
+              tx.objectStore("conflicts").put({ opId: record.opId, op: toOp(record), codes: result.codes ?? [], conflictId: result.conflictId }),
+            ]);
           }
 
-          return tx.objectStore("outbox").delete(record.opId);
+          return settle;
         }),
         tx.done,
       ]);
@@ -99,13 +109,37 @@ export const useSyncStore = defineStore("sync", () => {
     }
   }
 
-  async function pull() {
-    const db = await openOfflineDb();
+  function withSyncLock(task: () => Promise<void>) {
+    if (navigator.locks == null) {
+      return task();
+    }
+
+    return navigator.locks.request("wrs-sync", task);
+  }
+
+  async function pullUnlocked(db: TOfflineDb) {
     const [record] = await db.getAll("snapshot");
     const isFresh = record != null && isSameManilaDay(record.syncedAt, Date.now());
+    const requestedAt = new Date().toISOString();
     const snapshot = await pullSnapshot(isFresh ? record.cursor : undefined);
 
-    await rider.applySnapshot(snapshot);
+    await rider.applySnapshot({ snapshot, requestedAt });
+
+    const reflected = (await db.getAll("outbox")).filter(({ settledAt }) => settledAt != null && settledAt <= requestedAt);
+    const tx = db.transaction("outbox", "readwrite");
+
+    await Promise.all([...reflected.map(({ opId }) => tx.store.delete(opId)), tx.done]);
+    await loadOutbox(db);
+  }
+
+  async function pull() {
+    try {
+      const db = await openOfflineDb();
+
+      await withSyncLock(() => pullUnlocked(db));
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async function flush() {
@@ -113,30 +147,34 @@ export const useSyncStore = defineStore("sync", () => {
       return;
     }
 
-    const db = await openOfflineDb();
+    try {
+      const db = await openOfflineDb();
 
-    await navigator.locks.request("wrs-sync", async () => {
-      isSyncing.value = true;
+      await withSyncLock(async () => {
+        isSyncing.value = true;
 
-      try {
-        const orphans = (await db.getAllFromIndex("outbox", "seq")).filter(({ state }) => state === "sending");
+        try {
+          const orphans = (await db.getAllFromIndex("outbox", "seq")).filter(({ state, settledAt }) => state === "sending" && settledAt == null);
 
-        await setState({ db, records: orphans, state: "pending" });
+          await setState({ db, records: orphans, state: "pending" });
 
-        let hasMore = true;
+          let hasMore = true;
 
-        while (hasMore) {
-          hasMore = await pushBatch(db);
+          while (hasMore) {
+            hasMore = await pushBatch(db);
+          }
+
+          await pullUnlocked(db);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          await loadOutbox(db);
+          isSyncing.value = false;
         }
-
-        await pull();
-      } catch (error) {
-        console.error(error);
-      } finally {
-        await loadOutbox(db);
-        isSyncing.value = false;
-      }
-    });
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
 
   async function enqueue({ opId, ...draft }: TSyncOpDraft) {
@@ -145,12 +183,18 @@ export const useSyncStore = defineStore("sync", () => {
     const last = await tx.store.index("seq").openCursor(null, "prev");
 
     await Promise.all([
-      tx.store.add({ ...draft, opId: opId ?? crypto.randomUUID(), occurredAt: new Date().toISOString(), seq: (last?.value.seq ?? 0) + 1, state: "pending" }),
+      tx.store.add({
+        ...cloneDeep(draft),
+        opId: opId ?? crypto.randomUUID(),
+        occurredAt: new Date().toISOString(),
+        seq: (last?.value.seq ?? 0) + 1,
+        state: "pending",
+      }),
       tx.done,
     ]);
 
     await loadOutbox(db);
-    await flush();
+    void flush();
   }
 
   async function dismissConflict(opId: string) {
@@ -163,7 +207,7 @@ export const useSyncStore = defineStore("sync", () => {
   const retryTimer = useIntervalFn(
     () => {
       if (pending.value.some(({ state }) => state === "pending")) {
-        flush();
+        void flush();
       }
     },
     RETRY_MS,
@@ -171,15 +215,9 @@ export const useSyncStore = defineStore("sync", () => {
   );
 
   const pullTimer = useIntervalFn(
-    async () => {
-      if (!isOnline.value) {
-        return;
-      }
-
-      try {
-        await pull();
-      } catch (error) {
-        console.error(error);
+    () => {
+      if (isOnline.value) {
+        void pull();
       }
     },
     PULL_MS,
@@ -193,10 +231,11 @@ export const useSyncStore = defineStore("sync", () => {
 
     await Promise.all([rider.hydrate(), loadOutbox(db)]);
     await setState({ db, records: pending.value.filter(({ state }) => state === "failed"), state: "pending" });
+    await loadOutbox(db);
 
     stopOnlineWatch ??= watch(isOnline, (isNowOnline) => {
       if (isNowOnline) {
-        flush();
+        void flush();
       }
     });
 
@@ -213,5 +252,5 @@ export const useSyncStore = defineStore("sync", () => {
     pullTimer.pause();
   }
 
-  return { isOnline, status, pending, conflicts, dismissConflict, enqueue, flush, pull, start, stop };
+  return { isOnline, status, outbox, pending, conflicts, dismissConflict, enqueue, flush, pull, start, stop };
 });

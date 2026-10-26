@@ -23,5 +23,6 @@ const items = [
 </script>
 
 <template>
+  <LayoutOfflineBanner />
   <LayoutShell :items="items" :home="ROUTES.CASHIER.INDEX" />
 </template>

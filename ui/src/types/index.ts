@@ -27,6 +27,7 @@ export * from "./labels/payroll";
 export * from "./labels/product";
 export * from "./labels/sale";
 export * from "./labels/setting";
+export * from "./labels/sync";
 export * from "./labels/trip";
 export * from "./layout";
 export * from "./middleware";

@@ -6,6 +6,7 @@ import VueRouter from "vue-router/vite";
 import tailwindcss from "@tailwindcss/vite";
 import AutoImport from "unplugin-auto-import/vite";
 import Components from "unplugin-vue-components/vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 import { barrels } from "./plugins/barrels";
 
@@ -35,6 +36,27 @@ export default defineConfig({
       deep: true,
       directoryAsNamespace: true,
       collapseSamePrefixes: true,
+    }),
+    VitePWA({
+      registerType: "autoUpdate",
+      devOptions: { enabled: false },
+      manifest: {
+        name: "WRS",
+        short_name: "WRS",
+        start_url: "/",
+        display: "standalone",
+        theme_color: "#00786f",
+        background_color: "#00786f",
+        icons: [
+          { src: "pwa-192x192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "maskable-icon-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        navigateFallback: "index.html",
+      },
     }),
   ],
   resolve: {

@@ -49,6 +49,7 @@ async function toApiError(error: unknown) {
 }
 
 export const http = axios.create({
+  timeout: 15_000,
   baseURL: import.meta.env.VITE_APP_API_URL,
 });
 
@@ -75,7 +76,7 @@ http.interceptors.response.use(
       const authStore = useAuthStore();
       const currentRoute = router.currentRoute.value;
 
-      authStore.logout();
+      authStore.logout({ isForced: true });
 
       if (currentRoute !== START_LOCATION && currentRoute.path !== ROUTES.LOGIN) {
         router.push({ path: ROUTES.LOGIN, query: { redirect: currentRoute.fullPath } });

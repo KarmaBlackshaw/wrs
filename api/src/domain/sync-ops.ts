@@ -3,7 +3,7 @@ import type { TSyncOp, TSyncPushResult } from "@wrs/contract/sync";
 import type { Knex } from "knex";
 import { insertRecord } from "../lib/context/insertRecord.ts";
 import { makeCtx, type TActor, type TCtx } from "../lib/context/makeCtx.ts";
-import { DomainError } from "../lib/errors/domainError.ts";
+import { DomainError, domainError } from "../lib/errors/domainError.ts";
 import { createCustomer } from "./customer.ts";
 import { releaseCustomer } from "./customer-assignment.ts";
 import { recordDelivery } from "./delivery.ts";
@@ -56,6 +56,32 @@ export const resolveCustomerId = async (ctx: TCtx, id: string) => {
   return created?.refId ?? id;
 };
 
+const assertHeldAtOccurredAt = async (ctx: TCtx, customerId: string) => {
+  const customer: { riderId: string | null } | undefined = await ctx.db("customers").where({ id: customerId }).forUpdate().first("riderId");
+
+  if (!customer) {
+    throw domainError({ statusCode: 422, code: "reference.not_found", message: "Customer not found.", details: { field: "customerId" } });
+  }
+
+  if (customer.riderId === ctx.actor.id) {
+    return;
+  }
+
+  const held: { riderId: string | null } | undefined = await ctx
+    .db("customerOwnerships")
+    .where({ customerId })
+    .where("createdAt", "<=", ctx.now)
+    .orderBy([
+      { column: "createdAt", order: "desc" },
+      { column: "id", order: "desc" },
+    ])
+    .first("riderId");
+
+  if (held?.riderId !== ctx.actor.id) {
+    throw domainError({ statusCode: 403, code: "customer.not_owner", message: "This customer wasn't yours when you released it.", details: { customerId } });
+  }
+};
+
 const dispatch = async (ctx: TCtx, op: TSyncOp, serverNow: Date): Promise<TRef> => {
   switch (op.kind) {
     case "customer.create": {
@@ -66,6 +92,7 @@ const dispatch = async (ctx: TCtx, op: TSyncOp, serverNow: Date): Promise<TRef> 
     case "customer.release": {
       const customerId = await resolveCustomerId(ctx, op.payload.customerId);
 
+      await assertHeldAtOccurredAt(ctx, customerId);
       await releaseCustomer(ctx, { ...op.payload, customerId, appliedAt: serverNow });
 
       return { refType: "customer", refId: customerId };

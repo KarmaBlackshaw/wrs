@@ -2,6 +2,11 @@
 import { IconTruck, IconTruckFill, IconUserCircle, IconUserCircleFill, IconUsers, IconUsersFill } from "@/components";
 import { ROUTES } from "@/types";
 
+const syncStore = useSyncStore();
+
+onMounted(() => syncStore.start());
+onUnmounted(() => syncStore.stop());
+
 const items = [
   { label: "Trips", to: ROUTES.RIDER.INDEX, icon: IconTruck, activeIcon: IconTruckFill },
   { label: "Customers", to: ROUTES.RIDER.CUSTOMERS, icon: IconUsers, activeIcon: IconUsersFill },
@@ -10,5 +15,9 @@ const items = [
 </script>
 
 <template>
-  <LayoutShell :items="items" :home="ROUTES.RIDER.INDEX" />
+  <LayoutShell :items="items" :home="ROUTES.RIDER.INDEX">
+    <template #header-extra>
+      <SyncStatusPill />
+    </template>
+  </LayoutShell>
 </template>

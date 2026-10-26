@@ -86,7 +86,9 @@ function isActive(to: string) {
           </span>
           <span class="text-base font-semibold tracking-tight">WRS</span>
         </RouterLink>
-        <LayoutHeaderActions />
+        <LayoutHeaderActions>
+          <slot name="header-extra"></slot>
+        </LayoutHeaderActions>
       </header>
 
       <main class="min-w-0 flex-1 px-4 pt-5 pb-[calc(var(--tabbar-h,0px)+1.5rem)] lg:px-6">
