@@ -1,4 +1,4 @@
-import type { TApprovalDecision } from "@wrs/contract/approval";
+import type { TApprovalCategory, TApprovalDecision } from "@wrs/contract/approval";
 import type { TVoidRefType } from "@wrs/contract/void";
 
 import type { TTone } from "@/types/ui";
@@ -21,4 +21,10 @@ export const VOID_SOURCE_LABEL: Record<TVoidRefType, string> = {
   delivery: "delivery",
   walk_in_sale: "walk-in sale",
   payment: "payment",
+};
+
+export const APPROVAL_CATEGORY_LABEL: Record<TApprovalCategory, string> = {
+  loans: "Loans & advances",
+  customers: "Customers & employees",
+  deliveries: "Deliveries & voids",
 };
