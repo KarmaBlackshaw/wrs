@@ -9,6 +9,7 @@ export { waiverRequestRejectBodySchema as rejectBodySchema, type TWaiverRequestR
 
 export const approvalKindSchema = z.enum(["void", "loan", "waiver", "customer", "sync_conflict"]);
 export const approvalStatusSchema = z.enum(["pending", "handled"]);
+export const approvalCategorySchema = z.enum(["loans", "customers", "deliveries"]);
 export const approvalDecisionSchema = z.enum(["approved", "rejected", "accepted", "voided"]);
 
 const approvalOf = <K extends z.infer<typeof approvalKindSchema>, I extends z.ZodType>(kind: K, item: I) =>
@@ -33,10 +34,22 @@ export const approvalSchema = z.discriminatedUnion("kind", [
   approvalOf("sync_conflict", syncConflictSchema),
 ]);
 
-export const approvalListQuerySchema = pageQuerySchema.extend({ status: approvalStatusSchema.optional() });
+export const APPROVAL_KIND_CATEGORY: Record<TApprovalKind, TApprovalCategory> = {
+  loan: "loans",
+  customer: "customers",
+  waiver: "customers",
+  void: "deliveries",
+  sync_conflict: "deliveries",
+};
+
+export const approvalListQuerySchema = pageQuerySchema.extend({
+  status: approvalStatusSchema.optional(),
+  category: approvalCategorySchema.optional(),
+});
 
 export type TApprovalKind = z.infer<typeof approvalKindSchema>;
 export type TApprovalStatus = z.infer<typeof approvalStatusSchema>;
+export type TApprovalCategory = z.infer<typeof approvalCategorySchema>;
 export type TApprovalDecision = z.infer<typeof approvalDecisionSchema>;
 export type TApproval = z.infer<typeof approvalSchema>;
 export type TApprovalListQuery = z.infer<typeof approvalListQuerySchema>;

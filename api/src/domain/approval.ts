@@ -1,4 +1,11 @@
-import type { TApproval, TApprovalKind, TApprovalListQuery, TApprovalStatus } from "@wrs/contract/approval";
+import {
+  APPROVAL_KIND_CATEGORY,
+  approvalKindSchema,
+  type TApproval,
+  type TApprovalKind,
+  type TApprovalListQuery,
+  type TApprovalStatus,
+} from "@wrs/contract/approval";
 import type { TPage } from "@wrs/contract/common";
 import type { TWaiverRequest } from "@wrs/contract/customer";
 import type { TCtx } from "../lib/context/makeCtx.ts";
@@ -166,7 +173,7 @@ const hydrate = async (ctx: TCtx, rows: TFeedRow[]): Promise<TApproval[]> => {
   });
 };
 
-export const listApprovals = async (ctx: TCtx, { status, page, pageSize }: TApprovalListQuery): Promise<TPage<TApproval>> => {
+export const listApprovals = async (ctx: TCtx, { status, category, page, pageSize }: TApprovalListQuery): Promise<TPage<TApproval>> => {
   const query = ctx.db
     .from(feedQuery(ctx.db))
     .select("f.kind", "f.id", "f.createdAt")
@@ -177,6 +184,13 @@ export const listApprovals = async (ctx: TCtx, { status, page, pageSize }: TAppr
 
   if (status) {
     query.where("f.status", status);
+  }
+
+  if (category) {
+    query.whereIn(
+      "f.kind",
+      approvalKindSchema.options.filter((kind) => APPROVAL_KIND_CATEGORY[kind] === category)
+    );
   }
 
   const { items, ...rest } = await paginate<TFeedRow>(query, { page, pageSize });

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { TApproval, TApprovalStatus } from "@wrs/contract/approval";
+import type { TApproval, TApprovalCategory, TApprovalStatus } from "@wrs/contract/approval";
 
 import { IconCheck, IconStamp, IconUserCircle, IconX } from "@/components";
 import { listApprovals } from "@/services/approval";
@@ -8,9 +8,10 @@ import { rejectLoan } from "@/services/loan";
 import { acceptSyncConflict, voidSyncConflict } from "@/services/syncConflict";
 import { approveVoid, rejectVoid } from "@/services/void";
 import { approveWaiverRequest, rejectWaiverRequest } from "@/services/waiverRequest";
-import { OWNER_TABS, ROUTES, type TConfirmOptions, type TRowAction } from "@/types";
+import { OWNER_TABS, ROUTES, type TConfirmOptions, type TOption, type TRowAction } from "@/types";
 
 type TReasonTarget = { title: string; confirmLabel: string; successMessage: string; submit: (reason: string) => Promise<unknown> };
+type TCategoryFilter = "all" | TApprovalCategory;
 
 definePage({ meta: { title: "Approvals" } });
 
@@ -39,13 +40,17 @@ const isWide = useMediaQuery("(min-width: 640px)");
 
 const status = computed((): TApprovalStatus => (route.path === ROUTES.OWNER.APPROVALS_HANDLED ? "handled" : "pending"));
 const isPending = computed(() => status.value === "pending");
+const category = useRouteQuery<TCategoryFilter>("category", "all", { mode: "push" });
 const { page, resetPageOn, clampTo } = usePageQuery();
 
-resetPageOn(status);
+resetPageOn([status, category]);
 
-const { data, isLoading, error, reload } = useResource((signal) => listApprovals({ status: status.value, page: page.value }, signal), {
-  watch: [status, page],
-});
+const categoryOptions: TOption<TCategoryFilter>[] = [{ value: "all", label: "All" }, ...APPROVAL_CATEGORY_OPTIONS];
+
+const { data, isLoading, error, reload } = useResource(
+  (signal) => listApprovals({ status: status.value, category: category.value === "all" ? undefined : category.value, page: page.value }, signal),
+  { watch: [status, category, page] }
+);
 
 const columns = computed(() => {
   if (!isWide.value) {
@@ -55,7 +60,15 @@ const columns = computed(() => {
   return isPending.value ? pendingColumns : handledColumns;
 });
 
-const emptyTitle = computed(() => (isPending.value ? "No pending approvals" : "Nothing handled yet"));
+const emptyTitle = computed(() => {
+  if (category.value === "all") {
+    return isPending.value ? "No pending approvals" : "Nothing handled yet";
+  }
+
+  const label = APPROVAL_CATEGORY_LABEL[category.value];
+
+  return isPending.value ? `No pending approvals in ${label}` : `Nothing handled in ${label} yet`;
+});
 
 const loanApproval = ref<TApproval>();
 const reasonTarget = ref<TReasonTarget>();
@@ -297,6 +310,11 @@ function approvalActions(approval: TApproval) {
       :row-key="(row) => `${row.kind}:${row.id}`"
       @retry="reload"
     >
+      <template #filters>
+        <div class="w-full sm:w-64">
+          <UiSelect v-model="category" label="Category" :options="categoryOptions" />
+        </div>
+      </template>
       <template #cell-request="{ row }">
         <span class="block">{{ requestLabel(row) }}</span>
         <template v-if="!isWide">
