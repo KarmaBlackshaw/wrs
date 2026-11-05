@@ -46,6 +46,7 @@ const { page, resetPageOn, clampTo } = usePageQuery();
 resetPageOn([status, category]);
 
 const categoryOptions: TOption<TCategoryFilter>[] = [{ value: "all", label: "All" }, ...APPROVAL_CATEGORY_OPTIONS];
+const categoryChipValue = computed(() => (category.value === "all" ? undefined : APPROVAL_CATEGORY_LABEL[category.value]));
 
 const { data, isLoading, error, reload } = useResource(
   (signal) => listApprovals({ status: status.value, category: category.value === "all" ? undefined : category.value, page: page.value }, signal),
@@ -311,9 +312,9 @@ function approvalActions(approval: TApproval) {
       @retry="reload"
     >
       <template #filters>
-        <div class="w-full sm:w-64">
+        <UiFilterChip label="Category" :value="categoryChipValue" @clear="category = 'all'">
           <UiSelect v-model="category" label="Category" :options="categoryOptions" />
-        </div>
+        </UiFilterChip>
       </template>
       <template #cell-request="{ row }">
         <span class="block">{{ requestLabel(row) }}</span>
