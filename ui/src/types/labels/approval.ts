@@ -1,7 +1,7 @@
 import type { TApprovalCategory, TApprovalDecision } from "@wrs/contract/approval";
 import type { TVoidRefType } from "@wrs/contract/void";
 
-import type { TOption, TTone } from "@/types/ui";
+import type { TTone } from "@/types/ui";
 
 export const DECISION_LABEL: Record<TApprovalDecision, string> = {
   approved: "Approved",
@@ -28,9 +28,3 @@ export const APPROVAL_CATEGORY_LABEL: Record<TApprovalCategory, string> = {
   customers: "Customers & employees",
   deliveries: "Deliveries & voids",
 };
-
-export const APPROVAL_CATEGORY_OPTIONS: TOption<TApprovalCategory>[] = [
-  { value: "loans", label: APPROVAL_CATEGORY_LABEL.loans },
-  { value: "customers", label: APPROVAL_CATEGORY_LABEL.customers },
-  { value: "deliveries", label: APPROVAL_CATEGORY_LABEL.deliveries },
-];

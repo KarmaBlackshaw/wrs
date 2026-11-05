@@ -34,13 +34,13 @@ export const approvalSchema = z.discriminatedUnion("kind", [
   approvalOf("sync_conflict", syncConflictSchema),
 ]);
 
-export const APPROVAL_KIND_CATEGORY: Record<TApprovalKind, TApprovalCategory> = {
+export const APPROVAL_KIND_CATEGORY = {
   loan: "loans",
   customer: "customers",
   waiver: "customers",
   void: "deliveries",
   sync_conflict: "deliveries",
-};
+} as const satisfies Record<TApprovalKind, TApprovalCategory>;
 
 export const approvalListQuerySchema = pageQuerySchema.extend({
   status: approvalStatusSchema.optional(),
@@ -52,4 +52,8 @@ export type TApprovalStatus = z.infer<typeof approvalStatusSchema>;
 export type TApprovalCategory = z.infer<typeof approvalCategorySchema>;
 export type TApprovalDecision = z.infer<typeof approvalDecisionSchema>;
 export type TApproval = z.infer<typeof approvalSchema>;
+export type TApprovalOf<C extends TApprovalCategory> = Extract<
+  TApproval,
+  { kind: { [K in TApprovalKind]: (typeof APPROVAL_KIND_CATEGORY)[K] extends C ? K : never }[TApprovalKind] }
+>;
 export type TApprovalListQuery = z.infer<typeof approvalListQuerySchema>;

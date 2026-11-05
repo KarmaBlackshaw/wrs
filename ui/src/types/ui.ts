@@ -32,3 +32,9 @@ export type TTab = {
   to: string;
   count?: number;
 };
+
+export type TTableColumn = {
+  key: string;
+  label: string;
+  align?: "left" | "right";
+};
